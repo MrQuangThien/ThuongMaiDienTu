@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Danh sách cửa hàng Bách Hóa Xanh{% endblock %}
+
+{% block content %}
+<style>
+    /* Chuyển CSS vào trong block để áp dụng riêng cho trang này */
+    .store-list-container { padding: 30px 15px; min-height: 60vh; }
+    .filter-box { background: #f8f9fa; padding: 20px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .filter-box input, .filter-box select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; min-width: 200px; }
+    .filter-btn { background: #008a37; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+    .filter-btn:hover { background: #006b2b; }
+    .clear-btn { color: #d8232a; text-decoration: none; font-weight: bold; padding: 10px; }
+    .clear-btn:hover { text-decoration: underline; }
+    
+    .store-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .store-table th, .store-table td { border: 1px solid #eee; padding: 15px; text-align: left; }
+    .store-table th { background-color: #008a37; color: white; font-weight: bold; }
+    .store-table tr:hover { background-color: #f1f8f4; }
+    .action-links a { text-decoration: none; padding: 5px 10px; background: #eef2f5; border-radius: 4px; color: #333; font-weight: bold; display: inline-block; margin-right: 5px; }
+    .action-links a.view-map { background: #ffe100; color: #d8232a; }
+</style>
+
+<div class="container store-list-container">
+    <h1 style="color: #008a37; border-bottom: 2px solid #008a37; padding-bottom: 10px; margin-bottom: 20px;">
+        📋 DANH SÁCH CỬA HÀNG
+    </h1>
+
+    <div class="filter-box">
+        <form method="get" style="display: flex; flex-wrap: wrap; gap: 10px; width: 100%; align-items: center;">
+            <select name="quan">
+                <option value="all">-- Tất cả khu vực --</option>
+                {% for quan in danh_sach_quan %}
+                    <option value="{{ quan }}" {% if dang_chon_quan == quan %}selected{% endif %}>
+                        {{ quan }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <input type="text" name="q" placeholder="Nhập tên đường, tên quán..." value="{{ dang_tim_kiem|default:'' }}">
+
+            <button type="submit" class="filter-btn">🔍 Lọc dữ liệu</button>
+            <a href="/locations/danh-sach/" class="clear-btn">✖ Xóa bộ lọc</a>
+        </form>
+    </div>
+
+    <h3 style="color: #555;">Tìm thấy: <span style="color: #d8232a;">{{ stores|length }}</span> kết quả</h3>
+    
+    <div style="overflow-x: auto;">
+        <table class="store-table">
+            <thead>
+                <tr>
+                    <th width="10%">Hình ảnh</th>
+                    <th width="30%">Tên cửa hàng</th>
+                    <th width="45%">Địa chỉ</th>
+                    <th width="25%">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for store in stores %}
+                <tr>
+                    <td>
+                        {% if store.hinh_anh %}
+                            <img src="{{ store.hinh_anh.url }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #ccc;">
+                        {% else %}
+                            <div style="width: 60px; height: 60px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9ca3af; text-align: center;">No Image</div>
+                        {% endif %}
+                    </td>
+
+                    <td><b style="color: #008a37;">{{ store.ten_chi_nhanh }}</b></td>
+                    <td>{{ store.dia_chi }}</td>
+                    <td class="action-links">
+                        <a href="{% url 'locations:store_detail' store.id %}">👁️ Xem chi tiết</a>
+                        <a href="{% url 'locations:map_search' %}?id={{ store.id }}" class="view-map" target="_blank">🗺️ Xem map</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align:center; color:#d8232a; padding: 30px;">
+                        <b>Không tìm thấy cửa hàng nào phù hợp với bộ lọc!</b>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

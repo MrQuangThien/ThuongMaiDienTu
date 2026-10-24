@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Không tìm thấy trang</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(circle at top left, rgba(34, 197, 94, 0.18), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.18), transparent 30%),
+                linear-gradient(135deg, #f8fafc, #eef6ff);
+            padding: 24px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 680px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 28px;
+            padding: 48px 36px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #ecfdf5;
+            color: #15803d;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+
+        .error-code {
+            font-size: 110px;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: -4px;
+            color: #0f172a;
+            margin-bottom: 12px;
+        }
+
+        .emoji {
+            font-size: 54px;
+            margin-bottom: 14px;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #0f172a;
+            margin-bottom: 14px;
+        }
+
+        p {
+            font-size: 17px;
+            line-height: 1.7;
+            color: #475569;
+            max-width: 520px;
+            margin: 0 auto 30px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 180px;
+            padding: 14px 22px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.25s ease;
+        }
+
+        .btn-home {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            color: white;
+            box-shadow: 0 10px 20px rgba(34, 197, 94, 0.2);
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 28px rgba(34, 197, 94, 0.24);
+        }
+
+        .btn-back {
+            background: white;
+            color: #0f172a;
+            border: 1px solid #dbeafe;
+        }
+
+        .btn-back:hover {
+            transform: translateY(-2px);
+            background: #f8fafc;
+        }
+
+        .note {
+            margin-top: 24px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 640px) {
+            .card {
+                padding: 34px 20px;
+                border-radius: 22px;
+            }
+
+            .error-code {
+                font-size: 82px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+
+            p {
+                font-size: 15px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="badge">Trang không tồn tại</div>
+        <div class="emoji">🛒</div>
+        <div class="error-code">404</div>
+        <h1>Ôi, không tìm thấy trang này</h1>
+        <p>
+            Có thể đường dẫn bạn vừa truy cập không còn tồn tại, đã bị thay đổi
+            hoặc nhập chưa chính xác. Bạn có thể quay lại trang chủ để tiếp tục mua sắm.
+        </p>
+
+        <div class="actions">
+            <a href="/" class="btn btn-home">🏠 Quay lại trang chủ</a>
+            <a href="javascript:history.back()" class="btn btn-back">← Quay lại trang trước</a>
+        </div>
+
+        <div class="note">
+            BHX luôn sẵn sàng đưa bạn về đúng chỗ nhanh hơn.
+        </div>
+    </div>
+</body>
+</html>

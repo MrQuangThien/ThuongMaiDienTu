@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Quản trị BHX{% endblock %}
+
+{% block content %}
+<section class="admin-shell">
+    <div class="container admin-layout">
+        <aside class="admin-sidebar">
+            <div class="admin-brand">
+                <div class="admin-logo">BHX</div>
+                <div>
+                    <h3>Quản trị hệ thống</h3>
+                    <p>Bách Hóa Xanh</p>
+                </div>
+            </div>
+
+            <style>
+                .menu-disabled {
+                    opacity: 0.45;
+                    pointer-events: none;
+                    cursor: not-allowed;
+                    display: block;
+                }
+
+                .menu-section-title {
+                    margin: 18px 0 8px;
+                    font-size: 12px;
+                    font-weight: 700;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: #94a3b8;
+                }
+
+                .menu-alert {
+                    color: #dc2626 !important;
+                    font-weight: 700;
+                }
+            </style>
+
+            <nav class="admin-menu">
+                <div class="menu-section-title">Điều hướng</div>
+
+                <a href="{% url 'store:admin_dashboard' %}">Tổng quan</a>
+                <a href="{% url 'store:admin_product_list' %}">Sản phẩm</a>
+                <a href="{% url 'store:admin_customer_list' %}">Khách hàng</a>
+                <a href="{% url 'store:admin_order_list' %}">Đơn hàng</a>
+
+                {% if request.session.role == "ADMIN" %}
+                    <a href="{% url 'store:inventory_management' %}">Quản lý tồn kho</a>
+                    <a href="{% url 'store:admin_employee_list' %}">Nhân viên</a>
+                    <a href="{% url 'store:admin_account_list' %}">Tài khoản</a>
+                    <a href="{% url 'store:admin_branch_list' %}">Chi nhánh</a>
+                {% elif request.session.role == "STAFF" %}
+                    <a href="{% url 'store:staff_inventory' %}">Tồn kho cửa hàng</a>
+                    <a href="javascript:void(0)" class="menu-disabled" title="Bạn không có quyền truy cập">Nhân viên</a>
+                    <a href="javascript:void(0)" class="menu-disabled" title="Bạn không có quyền truy cập">Tài khoản</a>
+                    <a href="javascript:void(0)" class="menu-disabled" title="Bạn không có quyền truy cập">Chi nhánh</a>
+                {% endif %}
+
+                <div class="menu-section-title">Khác</div>
+                <a href="{% url 'store:home' %}">Về trang chủ</a>
+                <a href="{% url 'store:logout' %}">Đăng xuất</a>
+            </nav>
+        </aside>
+
+        <main class="admin-main">
+            <div class="admin-topbar">
+                <div>
+                    <h1>{% block admin_title %}Trang quản lý{% endblock %}</h1>
+                    <p>Xin chào {{ request.session.ho_ten|default:"Admin" }}</p>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="admin-alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            {% block admin_content %}{% endblock %}
+        </main>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,310 @@
+{% extends "store/admin/base_admin.html" %}
+
+{% block admin_title %}Tồn kho cửa hàng{% endblock %}
+
+{% block admin_content %}
+<style>
+    .inventory-page {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .inventory-card {
+        background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+        padding: 20px;
+    }
+
+    .branch-title {
+        margin: 0 0 8px 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .branch-address {
+        margin: 0;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+    }
+
+    .stat-card {
+        background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .stat-card span {
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .stat-card strong {
+        font-size: 28px;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .filter-form {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .filter-form input[type="text"],
+    .filter-form select {
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        min-width: 240px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .filter-form input[type="text"]:focus,
+    .filter-form select:focus {
+        border-color: #2563eb;
+    }
+
+    .btn-filter,
+    .btn-edit {
+        display: inline-block;
+        padding: 10px 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .btn-filter {
+        background: #2563eb;
+        color: #ffffff;
+    }
+
+    .btn-edit {
+        background: #0f766e;
+        color: #ffffff;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+    }
+
+    .inventory-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+    }
+
+    .inventory-table thead th {
+        background: #f8fafc;
+        color: #334155;
+        font-size: 14px;
+        text-align: left;
+        padding: 14px 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .inventory-table tbody td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #eef2f7;
+        vertical-align: middle;
+    }
+
+    .row-out {
+        background: #fff1f2;
+    }
+
+    .row-low {
+        background: #fff7ed;
+    }
+
+    .stock-number {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 12px;
+        color: #ffffff;
+        white-space: nowrap;
+    }
+
+    .status-out {
+        background: #dc2626;
+    }
+
+    .status-low {
+        background: #f59e0b;
+    }
+
+    .status-ok {
+        background: #16a34a;
+    }
+
+    .empty-box {
+        padding: 24px;
+        text-align: center;
+        color: #64748b;
+        background: #f8fafc;
+        border-radius: 12px;
+    }
+
+    .message-box {
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        font-weight: 600;
+    }
+
+    .message-success {
+        background: #ecfdf5;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    .message-error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+</style>
+
+<div class="inventory-page">
+    <div class="inventory-card">
+        {% if chi_nhanh %}
+            <h2 class="branch-title">{{ chi_nhanh.ten_chi_nhanh }}</h2>
+            <p class="branch-address">{{ chi_nhanh.dia_chi }}</p>
+        {% else %}
+            <h2 class="branch-title">Chưa gán chi nhánh cho nhân viên này</h2>
+            <p class="branch-address">Bạn cần được gán chi nhánh thì mới xem và cập nhật tồn kho.</p>
+        {% endif %}
+    </div>
+
+    {% if messages %}
+        <div class="inventory-card">
+            {% for message in messages %}
+                <div class="message-box {% if message.tags == 'error' %}message-error{% else %}message-success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span>Tổng mặt hàng</span>
+            <strong>{{ tong_mat_hang }}</strong>
+        </div>
+        <div class="stat-card">
+            <span>Còn hàng</span>
+            <strong>{{ tong_con_hang }}</strong>
+        </div>
+        <div class="stat-card">
+            <span>Sắp hết</span>
+            <strong>{{ tong_sap_het }}</strong>
+        </div>
+        <div class="stat-card">
+            <span>Hết hàng</span>
+            <strong>{{ tong_het_hang }}</strong>
+        </div>
+    </div>
+
+    <div class="inventory-card">
+        <form method="get" class="filter-form">
+            <input
+                type="text"
+                name="q"
+                value="{{ keyword }}"
+                placeholder="Tìm sản phẩm / loại"
+            >
+
+            <select name="trang_thai">
+                <option value="">Tất cả trạng thái</option>
+                <option value="CON_HANG" {% if selected_trang_thai == "CON_HANG" %}selected{% endif %}>Còn hàng</option>
+                <option value="SAP_HET" {% if selected_trang_thai == "SAP_HET" %}selected{% endif %}>Sắp hết</option>
+                <option value="HET_HANG" {% if selected_trang_thai == "HET_HANG" %}selected{% endif %}>Hết hàng</option>
+            </select>
+
+            <button type="submit" class="btn-filter">Lọc</button>
+            
+            <a href="{% url 'store:export_excel' %}" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 10px; background: #16a34a; color: white; text-decoration: none; font-weight: 700; font-size: 14px;">
+                📊 Tải Excel
+            </a>
+        </form>
+
+        {% if chi_nhanh %}
+            <div class="table-wrap">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Loại</th>
+                            <th>Số lượng tồn</th>
+                            <th>Ngưỡng cảnh báo</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in ton_khos %}
+                        <tr class="{% if item.so_luong_ton <= 0 %}row-out{% elif item.sap_het_hang %}row-low{% endif %}">
+                            <td>{{ item.san_pham.ten_san_pham }}</td>
+                            <td>{{ item.san_pham.loai.ten_loai }}</td>
+                            <td>
+                                <span class="stock-number">{{ item.so_luong_ton }}</span>
+                            </td>
+                            <td>{{ item.muc_can_canh_bao }}</td>
+                            <td>
+                                {% if item.so_luong_ton <= 0 %}
+                                    <span class="status-badge status-out">HẾT HÀNG</span>
+                                {% elif item.sap_het_hang %}
+                                    <span class="status-badge status-low">SẮP HẾT</span>
+                                {% else %}
+                                    <span class="status-badge status-ok">CÒN HÀNG</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'store:inventory_update' item.id %}" class="btn-edit">
+                                    Sửa tồn kho
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-box">Không có dữ liệu tồn kho.</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-box">
+                Không thể hiển thị tồn kho vì tài khoản này chưa được gán chi nhánh.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

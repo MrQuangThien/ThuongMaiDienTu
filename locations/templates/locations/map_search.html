@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bản đồ tìm kiếm cửa hàng Bách Hóa Xanh{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* Lớp bản đồ nền tự chuyển nguồn: OpenStreetMap -> Esri -> CARTO (bản miễn phí) khi tile không tải được */
+window.bhxTileLayer = function () {
+    var providers = [
+        { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', sub: 'abc', attr: '&copy; OpenStreetMap contributors' },
+        { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', sub: '', attr: 'Tiles &copy; Esri' },
+        { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', sub: 'abcd', attr: '&copy; OpenStreetMap &copy; CARTO' }
+    ];
+    var group = L.layerGroup();
+    var index = -1, errors = 0, loaded = 0, timer = null;
+
+    function use(i) {
+        index = i; errors = 0; loaded = 0;
+        if (timer) clearTimeout(timer);
+        var p = providers[i];
+        var layer = L.tileLayer(p.url, { subdomains: p.sub || 'abc', maxZoom: 19, attribution: p.attr, referrerPolicy: 'origin' });
+        layer.on('tileload', function () { loaded++; });
+        layer.on('tileerror', function () {
+            errors++;
+            if (errors >= 3 && loaded === 0) next();
+        });
+        group.clearLayers();
+        group.addLayer(layer);
+        // Nếu sau 6 giây vẫn chưa có tile nào tải được thì chuyển nguồn
+        timer = setTimeout(function () { if (loaded === 0) next(); }, 6000);
+    }
+    function next() {
+        if (index < providers.length - 1) use(index + 1);
+    }
+    use(0);
+    return group;
+};
+</script>
+
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<style>
+    /* CSS CHO THANH CÔNG CỤ */
+    .control-bar { 
+        background-color: #f8f9fa; padding: 15px 20px; display: flex; 
+        flex-wrap: wrap; align-items: center; gap: 15px; 
+        border-bottom: 1px solid #ddd; z-index: 1000; position: relative;
+    }
+
+    .search-container { position: relative; display: flex; flex-grow: 1; min-width: 200px; }
+    .search-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px 0 0 4px; outline: none; }
+    .search-btn { padding: 10px 15px; color: white; border: none; border-radius: 0 4px 4px 0; cursor: pointer; font-weight: bold; white-space: nowrap; }
+    
+    .suggestions-list {
+        position: absolute; top: 100%; left: 0; right: 50px; background: white;
+        border: 1px solid #ccc; max-height: 250px; overflow-y: auto;
+        list-style: none; padding: 0; margin: 0; z-index: 2000; display: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 0 0 4px 4px;
+    }
+    .suggestions-list li { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; color: #333; }
+    .suggestions-list li:hover { background-color: #e6f7ff; color: #0050b3; }
+
+    .btn-nearest { background-color: #ffe100; color: #d8232a; border: none; padding: 10px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; white-space: nowrap;}
+
+    /* CẤU TRÚC MỚI CHỨA BẢN ĐỒ & SIDEBAR */
+    #map-wrapper { display: flex; flex-direction: column; height: calc(100vh - 120px); min-height: 600px; }
+    .map-body { display: flex; flex-grow: 1; overflow: hidden; position: relative; }
+    
+    #map { flex-grow: 1; z-index: 1; }
+    
+    /* CSS SIDEBAR BÊN TRÁI */
+    #sidebar {
+        width: 320px; background: white; border-right: 1px solid #ddd;
+        display: none; flex-direction: column; z-index: 10;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    .sidebar-header {
+        background: #008a37; color: white; padding: 15px; font-weight: bold;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .close-sidebar { cursor: pointer; font-size: 18px; line-height: 1; }
+    .sidebar-content { overflow-y: auto; flex-grow: 1; }
+    
+    /* ITEMS TRONG SIDEBAR */
+    .store-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+    .store-item:hover { background-color: #f0fdf4; border-left: 4px solid #008a37; }
+    .store-name { color: #008a37; font-weight: bold; font-size: 15px; margin-bottom: 5px; }
+    .store-address { font-size: 13px; color: #555; line-height: 1.4; margin-bottom: 10px; }
+    .store-meta { display: flex; justify-content: space-between; align-items: center; }
+    .store-dist { color: #d8232a; font-weight: bold; font-size: 14px; }
+    .btn-sm-route { background: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .btn-sm-route:hover { background: #d68910; }
+
+    /* CSS BẢNG CHỈ ĐƯỜNG */
+    .leaflet-routing-container { 
+        background-color: white; padding: 10px; border-radius: 8px; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2); max-height: 50vh; 
+        overflow-y: auto; width: 320px !important;
+    }
+    .leaflet-routing-alternatives-container .leaflet-routing-geocoders { display: none; }
+    .popup-actions { display: flex; gap: 5px; margin-top: 10px; }
+    .popup-btn { flex: 1; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 4px; font-weight: bold; text-align: center; text-decoration: none; font-size: 0.9em; }
+</style>
+
+<div id="map-wrapper">
+    <div class="control-bar">
+        <div class="search-container">
+            <input type="text" id="user-location-input" class="search-input" placeholder="Nhập địa chỉ (VD: Lê Lợi, Quận 1)..." oninput="goiYDiaChi(this.value)">
+            <ul id="address-suggestions" class="suggestions-list"></ul>
+            <button class="search-btn" style="background-color: #0078FF;" onclick="timViTriTuNhap()">📍 Đặt</button>
+        </div>
+
+        <div class="search-container" style="min-width: 180px; flex-grow: 0;">
+            <select id="radius-select" class="search-input">
+                <option value="1">Bán kính 1 km</option>
+                <option value="3">Bán kính 3 km</option>
+                <option value="5" selected>Bán kính 5 km</option>
+                <option value="10">Bán kính 10 km</option>
+            </select>
+            <button class="search-btn" style="background-color: #d8232a;" onclick="timCuaHangTrongBanKinh()">🎯 Tìm quanh đây</button>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="keyword" class="search-input" list="danh-sach-cua-hang" placeholder="Tìm tên Bách Hóa Xanh...">
+            <datalist id="danh-sach-cua-hang"></datalist>
+            <button class="search-btn" style="background-color: #008a37;" onclick="timKiemVaChiDuong()">🔍 Tới ngay</button>
+        </div>
+
+        <button class="btn-nearest" onclick="layViTriNguoiDung(timCuaHangGanNhat)">📡 Dùng GPS</button>
+    </div>
+
+    <div id="status-bar" style="background: #e6f7ff; padding: 5px 20px; font-size: 0.9em; display:none;"></div>
+    
+    <div class="map-body">
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <span id="sidebar-title">Kết quả tìm kiếm</span>
+                <span class="close-sidebar" onclick="dongSidebar()">✕</span>
+            </div>
+            <div class="sidebar-content" id="sidebar-list">
+                </div>
+        </div>
+        <div id="map"></div>
+    </div>
+</div>
+
+<script>
+    var map = L.map('map').setView([10.7769, 106.7009], 13);
+    bhxTileLayer().addTo(map);
+
+    var stores = {{ stores_json|safe }};
+    var userLatLng = null;
+    var routingControl = null;
+    var userMarker = null;
+    var radiusCircle = null; // Biến lưu vòng tròn bán kính
+
+    var storeIcon = L.divIcon({
+        html: `
+            <div style="
+                background-color: #008a37; width: 32px; height: 32px; 
+                border-radius: 50% 50% 50% 0; transform: rotate(-45deg); 
+                border: 2px solid white; box-shadow: -2px 2px 5px rgba(0,0,0,0.4);
+                display: flex; align-items: center; justify-content: center;
+            ">
+                <span style="transform: rotate(45deg); font-size: 16px;">🛒</span>
+            </div>
+        `,
+        className: '',
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        popupAnchor: [0, -36]
+    });
+
+    var markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 50 });
+    var dataListElement = document.getElementById('danh-sach-cua-hang');
+
+    stores.forEach(st => {
+        st.markerObj = L.marker([st.lat, st.lon], {icon: storeIcon});
+        capNhatPopup(st, null);
+        markers.addLayer(st.markerObj);
+
+        var option = document.createElement('option');
+        option.value = st.ten;
+        dataListElement.appendChild(option);
+    });
+    map.addLayer(markers);
+
+    function capNhatPopup(store, distanceKm) {
+        var distHtml = distanceKm ? `<br><b>📍 Cách bạn: ${distanceKm} km</b>` : ``;
+        var content = `
+            <div style="text-align:center">
+                <b style="color:#008a37; font-size: 1.1em">${store.ten}</b><br>
+                <small>${store.dia_chi}</small>${distHtml}
+                <div class="popup-actions">
+                    <button class="popup-btn" style="background-color: #008a37;" onclick="xuLyChiDuong(${store.lat}, ${store.lon}, '${store.ten}')">🚗 Chỉ đường</button>
+                    <a href="/locations/chi-tiet/${store.id}/" class="popup-btn" style="background-color: #f39c12;">ℹ️ Chi tiết</a>
+                </div>
+            </div>`;
+        store.markerObj.bindPopup(content);
+    }
+
+    /* ====== TÍNH NĂNG TÌM TRONG BÁN KÍNH ====== */
+    function timCuaHangTrongBanKinh() {
+        if (!userLatLng) {
+            alert("Vui lòng đặt vị trí của bạn trước! (Bấm 'Dùng GPS' hoặc nhập địa chỉ vào ô đầu tiên)");
+            return;
+        }
+
+        var radiusKm = parseFloat(document.getElementById('radius-select').value);
+        var radiusMeters = radiusKm * 1000;
+
+        // Vẽ vòng tròn lên bản đồ
+        if (radiusCircle) map.removeLayer(radiusCircle);
+        radiusCircle = L.circle(userLatLng, {
+            color: '#d8232a', // Màu viền đỏ
+            fillColor: '#ffe100', // Nền vàng BHX
+            fillOpacity: 0.15,
+            radius: radiusMeters,
+            weight: 2
+        }).addTo(map);
+
+        // Lọc các cửa hàng thỏa mãn
+        var foundStores = [];
+        stores.forEach(st => {
+            var distance = userLatLng.distanceTo(L.latLng(st.lat, st.lon));
+            if (distance <= radiusMeters) {
+                foundStores.push({ store: st, dist: distance });
+            }
+        });
+
+        // Sắp xếp cửa hàng từ gần đến xa
+        foundStores.sort((a, b) => a.dist - b.dist);
+
+        // Hiển thị lên Sidebar
+        var sidebar = document.getElementById('sidebar');
+        var sidebarTitle = document.getElementById('sidebar-title');
+        var sidebarList = document.getElementById('sidebar-list');
+
+        sidebarTitle.innerText = `Có ${foundStores.length} cửa hàng (Bán kính ${radiusKm}km)`;
+        sidebarList.innerHTML = "";
+
+        if (foundStores.length === 0) {
+            sidebarList.innerHTML = `<div style="padding: 20px; text-align: center; color: #777;">Rất tiếc, không có cửa hàng nào trong phạm vi này. Thử tăng bán kính lên nhé!</div>`;
+        } else {
+            foundStores.forEach(item => {
+                var dKm = (item.dist / 1000).toFixed(2);
+                
+                var storeDiv = document.createElement('div');
+                storeDiv.className = 'store-item';
+                // Khi click vào khối cửa hàng -> Zoom và mở popup trên map
+                storeDiv.onclick = function() {
+                    markers.zoomToShowLayer(item.store.markerObj, function() {
+                        item.store.markerObj.openPopup();
+                    });
+                };
+
+                storeDiv.innerHTML = `
+                    <div class="store-name">${item.store.ten}</div>
+                    <div class="store-address">${item.store.dia_chi}</div>
+                    <div class="store-meta">
+                        <span class="store-dist">📍 ${dKm} km</span>
+                        <button class="btn-sm-route" onclick="event.stopPropagation(); xuLyChiDuong(${item.store.lat}, ${item.store.lon}, '${item.store.ten}')">🚗 Chỉ đường</button>
+                    </div>
+                `;
+                sidebarList.appendChild(storeDiv);
+            });
+        }
+
+        // Hiện Sidebar và căn chỉnh lại bản đồ vừa với vòng tròn
+        sidebar.style.display = 'flex';
+        map.fitBounds(radiusCircle.getBounds(), { padding: [50, 50] });
+    }
+
+    function dongSidebar() {
+        document.getElementById('sidebar').style.display = 'none';
+        if (radiusCircle) map.removeLayer(radiusCircle); // Xóa luôn vòng tròn khi đóng
+    }
+    /* ========================================== */
+
+    // Các hàm gợi ý địa chỉ, GPS và vẽ đường giữ nguyên chuẩn xịn của bạn
+    var timeoutId = null;
+    function goiYDiaChi(text) {
+        clearTimeout(timeoutId);
+        var list = document.getElementById('address-suggestions');
+        if (text.trim().length < 3) { list.style.display = 'none'; return; }
+        timeoutId = setTimeout(() => {
+            var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(text)}&countrycodes=vn&limit=5`;
+            fetch(url).then(r => r.json()).then(data => {
+                list.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(item => {
+                        var li = document.createElement('li');
+                        li.innerText = item.display_name;
+                        li.onclick = function() {
+                            document.getElementById('user-location-input').value = item.display_name;
+                            list.style.display = 'none';
+                            capNhatViTriUser(parseFloat(item.lat), parseFloat(item.lon));
+                            map.setView([parseFloat(item.lat), parseFloat(item.lon)], 15);
+                            hienThongBao(`✅ Đã cắm mốc tại: ${item.display_name}`);
+                        };
+                        list.appendChild(li);
+                    });
+                    list.style.display = 'block';
+                } else list.style.display = 'none';
+            }).catch(e => console.error("Lỗi:", e));
+        }, 600); 
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.id !== 'user-location-input') document.getElementById('address-suggestions').style.display = 'none';
+    });
+
+    function timViTriTuNhap() {
+        var address = document.getElementById('user-location-input').value;
+        if (!address) { alert("Vui lòng nhập địa chỉ của bạn trước!"); return; }
+        hienThongBao("⏳ Đang dò tìm...");
+        var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=vn&limit=1`;
+        fetch(url).then(r => r.json()).then(data => {
+            if (data.length > 0) {
+                capNhatViTriUser(parseFloat(data[0].lat), parseFloat(data[0].lon));
+                map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 15);
+                hienThongBao(`✅ Đã cắm mốc tại: ${data[0].display_name}`);
+            } else alert("Không tìm thấy địa chỉ này!");
+        });
+    }
+
+    function layViTriNguoiDung(callback) {
+        hienThongBao("⏳ Đang định vị GPS...");
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => { capNhatViTriUser(pos.coords.latitude, pos.coords.longitude); if(callback) callback(); },
+                err => { alert("Lỗi GPS. Tạm đặt ở trung tâm."); capNhatViTriUser(10.7721, 106.6983); },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+    }
+
+    function capNhatViTriUser(lat, lon) {
+        userLatLng = L.latLng(lat, lon);
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.marker(userLatLng, {draggable: true}).addTo(map);
+        userMarker.bindPopup("<b>Vị trí của bạn</b><br><i>(Kéo thả để dời đi)</i>").openPopup();
+        
+        stores.forEach(st => capNhatPopup(st, (userLatLng.distanceTo(L.latLng(st.lat, st.lon)) / 1000).toFixed(2)));
+        
+        userMarker.on('dragend', function() {
+            userLatLng = userMarker.getLatLng();
+            stores.forEach(st => capNhatPopup(st, (userLatLng.distanceTo(L.latLng(st.lat, st.lon)) / 1000).toFixed(2)));
+            
+            if (routingControl) timCuaHangGanNhat();
+            // Nếu Sidebar đang mở, tự động load lại danh sách khi người dùng kéo thả cắm mốc
+            if (document.getElementById('sidebar').style.display === 'flex') {
+                timCuaHangTrongBanKinh();
+            }
+        });
+    }
+
+    function xuLyChiDuong(lat, lon, tenStore) {
+        if (!userLatLng) alert("Bạn chưa có vị trí! Vui lòng nhập địa chỉ hoặc bật GPS.");
+        else veDuong(L.latLng(lat, lon), tenStore);
+    }
+
+    function veDuong(destLatLng, tenStore) {
+        if (routingControl) map.removeControl(routingControl);
+        hienThongBao(`🚗 Đang tính toán lộ trình tới: <b>${tenStore}</b>...`);
+
+        routingControl = L.Routing.control({
+            waypoints: [userLatLng, destLatLng], 
+            createMarker: () => null,
+            showAlternatives: true,
+            altLineOptions: { styles: [ {color: 'black', opacity: 0.15, weight: 9}, {color: 'white', opacity: 0.8, weight: 6}, {color: 'gray', opacity: 0.6, weight: 4} ] },
+            lineOptions: { styles: [{color: '#008a37', opacity: 0.8, weight: 6}] },
+            router: L.Routing.osrmv1({ serviceUrl: 'https://routing.openstreetmap.de/routed-bike/route/v1', language: 'vi', routingOptions: { alternatives: true } }),
+            fitSelectedRoutes: true, routeWhileDragging: false 
+        }).addTo(map);
+    }
+
+    function timCuaHangGanNhat() {
+        if (!userLatLng) return;
+        var nearest = stores.reduce((prev, curr) => (userLatLng.distanceTo(L.latLng(curr.lat, curr.lon)) < userLatLng.distanceTo(L.latLng(prev.lat, prev.lon)) ? curr : prev));
+        veDuong(L.latLng(nearest.lat, nearest.lon), nearest.ten);
+        markers.zoomToShowLayer(nearest.markerObj, function () { nearest.markerObj.openPopup(); });
+    }
+
+    function timKiemVaChiDuong() {
+        var k = document.getElementById('keyword').value.toLowerCase();
+        var f = stores.find(st => st.ten.toLowerCase().includes(k));
+        if (f) {
+            if(userLatLng) veDuong(L.latLng(f.lat, f.lon), f.ten);
+            else markers.zoomToShowLayer(f.markerObj, function () { f.markerObj.openPopup(); });
+        } else alert("Không tìm thấy cửa hàng này!");
+    }
+
+    function hienThongBao(msg) {
+        var bar = document.getElementById('status-bar'); bar.style.display = 'block'; bar.innerHTML = msg;
+    }
+</script>
+{% endblock %}

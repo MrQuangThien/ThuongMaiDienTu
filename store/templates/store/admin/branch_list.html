@@ -1,0 +1,43 @@
+{% extends "store/admin/base_admin.html" %}
+{% block admin_title %}Quản lý chi nhánh{% endblock %}
+{% block admin_content %}
+<div class="toolbar">
+    <form method="get" class="filter-form">
+        <input type="text" name="q" value="{{ q }}" placeholder="Tìm chi nhánh...">
+        <button type="submit">Tìm</button>
+    </form>
+    <a href="{% url 'store:admin_branch_create' %}" class="btn-primary">+ Thêm chi nhánh</a>
+</div>
+
+<div class="table-wrap">
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên chi nhánh</th>
+            <th>Địa chỉ</th>
+            <th>Điện thoại</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in page_obj %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.ten_chi_nhanh }}</td>
+            <td>{{ item.dia_chi }}</td>
+            <td>{{ item.dien_thoai }}</td>
+            <td class="actions">
+                <a href="{% url 'store:admin_branch_edit' item.id %}">Sửa</a>
+                <a href="{% url 'store:admin_branch_delete' item.id %}" class="danger-link">Xóa</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Không có dữ liệu.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% include "store/admin/pagination.html" with page_obj=page_obj %}
+{% endblock %}

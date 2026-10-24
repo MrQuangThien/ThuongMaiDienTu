@@ -1,0 +1,48 @@
+{% extends "store/admin/base_admin.html" %}
+{% block admin_title %}Quản lý nhân viên{% endblock %}
+
+{% block admin_content %}
+<div class="toolbar">
+    <form method="get" class="filter-form">
+        <input type="text" name="q" value="{{ q }}" placeholder="Tìm nhân viên...">
+        <button type="submit">Tìm</button>
+    </form>
+    <a href="{% url 'store:admin_employee_create' %}" class="btn-primary">+ Thêm nhân viên</a>
+</div>
+
+<div class="table-wrap">
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên nhân viên</th>
+            <th>Chức vụ</th>
+            <th>Lương</th>
+            <th>Chi nhánh</th>
+            <th>Tài khoản</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in page_obj %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.ten_nhan_vien }}</td>
+            <td>{{ item.chuc_vu }}</td>
+            <td>{{ item.luong }}</td>
+            <td>{{ item.chi_nhanh.ten_chi_nhanh }}</td>
+            <td>{% if item.tai_khoan %}{{ item.tai_khoan.username }}{% endif %}</td>
+            <td class="actions">
+                <a href="{% url 'store:admin_employee_edit' item.pk %}" >Sửa</a>
+                <a href="{% url 'store:admin_employee_delete' item.pk %}" class="danger-link">Xóa</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Không có dữ liệu.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% include "store/admin/pagination.html" with page_obj=page_obj %}
+{% endblock %}

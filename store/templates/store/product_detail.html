@@ -1,0 +1,996 @@
+{% extends "base.html" %}
+{% load static %}
+{% load currency_filters %}
+{% block title %}{{ product.ten_san_pham }}{% endblock %}
+
+{% block content %}
+<style>
+    .detail-image-box {
+        position: relative;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        background: #fff;
+        padding: 24px;
+        min-height: 420px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .detail-main-image {
+        width: 100%;
+        max-height: 460px;
+        object-fit: contain;
+        display: block;
+    }
+
+    .detail-no-image {
+        color: #94a3b8;
+        font-size: 16px;
+    }
+
+    .gallery-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 46px;
+        height: 90px;
+        border: none;
+        background: rgba(148, 153, 165, 0.65);
+        color: #fff;
+        font-size: 28px;
+        cursor: pointer;
+        z-index: 2;
+        border-radius: 10px;
+    }
+
+    .gallery-nav.prev {
+        left: 12px;
+    }
+
+    .gallery-nav.next {
+        right: 12px;
+    }
+
+    .gallery-counter {
+        position: absolute;
+        right: 14px;
+        bottom: 14px;
+        background: rgba(71, 85, 105, 0.82);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .thumbnail-strip-wrap {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .thumbnail-strip {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        flex: 1;
+        padding: 4px 2px;
+    }
+
+    .thumbnail-strip::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .thumbnail-strip::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 999px;
+    }
+
+    .thumb-scroll-btn {
+        width: 42px;
+        height: 42px;
+        border: none;
+        border-radius: 999px;
+        background: #e8f5e9;
+        color: #16a34a;
+        font-size: 24px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .thumb {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        border: 2px solid #dbe3ec;
+        border-radius: 14px;
+        background: #fff;
+        cursor: pointer;
+        flex-shrink: 0;
+        padding: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .thumb:hover {
+        border-color: #86efac;
+    }
+
+    .thumb.active {
+        border-color: #16a34a;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+    }
+
+    .product-review-section {
+        margin-top: 32px;
+    }
+
+    .review-comment-section {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .review-rating-box,
+    .comment-list-box {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 28px;
+    }
+
+    .review-rating-box h2 {
+        text-align: center;
+        font-size: 34px;
+        margin: 0 0 8px;
+        color: #222;
+    }
+
+    .review-rating-box p {
+        text-align: center;
+        font-size: 18px;
+        color: #6b7280;
+        margin: 0 0 28px;
+    }
+
+    .rating-stars {
+        display: flex;
+        justify-content: center;
+        gap: 28px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+    }
+
+    .rating-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        gap: 8px;
+        color: #6b7280;
+    }
+
+    .star {
+        font-size: 72px;
+        line-height: 1;
+        color: #f59e0b;
+        transition: 0.2s ease;
+    }
+
+    .star.active {
+        color: #f59e0b;
+    }
+
+    .comment-box h3,
+    .comment-list-box h3 {
+        font-size: 24px;
+        margin-bottom: 18px;
+        color: #1e3a8a;
+    }
+
+    .comment-box-input {
+        width: 100%;
+        min-height: 140px;
+        border: 1px solid #94a3b8;
+        border-radius: 16px;
+        padding: 18px;
+        font-size: 16px;
+        box-sizing: border-box;
+        resize: vertical;
+        outline: none;
+    }
+
+    .comment-box-input:focus {
+        border-color: #16a34a;
+    }
+
+    .btn-submit-comment {
+        margin-top: 18px;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 12px;
+        background: #16a34a;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+    }
+
+    .comment-item {
+        border-top: 1px solid #e5e7eb;
+        padding: 20px 0;
+        position: relative;
+    }
+
+    .comment-item:first-child {
+        border-top: none;
+        padding-top: 0;
+    }
+
+    .comment-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .comment-author-wrap {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .comment-author {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 8px;
+    }
+
+    .comment-rating {
+        margin-bottom: 8px;
+    }
+
+    .filled-star {
+        color: #f59e0b;
+        font-size: 20px;
+    }
+
+    .empty-star {
+        color: #cbd5e1;
+        font-size: 20px;
+    }
+
+    .comment-content {
+        font-size: 16px;
+        margin-bottom: 8px;
+        color: #111827;
+        white-space: pre-line;
+    }
+
+    .comment-date {
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    .comment-message {
+        margin-bottom: 16px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: #ecfdf5;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    .login-required-box {
+        text-align: center;
+    }
+
+    .login-required-box p {
+        margin-bottom: 16px;
+    }
+
+    .comment-menu-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .comment-menu-btn {
+        width: 38px;
+        height: 38px;
+        border: none;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #334155;
+        font-size: 22px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .comment-menu-btn:hover {
+        background: #e2e8f0;
+    }
+
+    .comment-menu-dropdown {
+        position: absolute;
+        top: 44px;
+        right: 0;
+        min-width: 140px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+        padding: 8px;
+        z-index: 30;
+        display: none;
+    }
+
+    .comment-menu-dropdown.show {
+        display: block;
+    }
+
+    .comment-menu-link,
+    .comment-menu-delete {
+        width: 100%;
+        border: none;
+        background: transparent;
+        text-align: left;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 15px;
+        color: #0f172a;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+        box-sizing: border-box;
+    }
+
+    .comment-menu-link:hover,
+    .comment-menu-delete:hover {
+        background: #f8fafc;
+    }
+
+    .comment-menu-delete {
+        color: #dc2626;
+    }
+
+
+    .product-extra-section {
+        margin-top: 32px;
+        display: grid;
+        gap: 24px;
+    }
+
+    .product-extra-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 28px;
+    }
+
+    .extra-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: #14532d;
+        margin: 0 0 18px;
+    }
+
+    .extra-table-wrap {
+        overflow-x: auto;
+    }
+
+    .extra-info-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .extra-info-table th,
+    .extra-info-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        text-align: left;
+        vertical-align: top;
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    .extra-info-table th {
+        width: 240px;
+        background: #f0fdf4;
+        color: #166534;
+        font-weight: 700;
+    }
+
+    .store-list-wrap {
+        display: grid;
+        gap: 20px;
+    }
+
+    .store-card {
+        border: 1px solid #dcfce7;
+        border-radius: 18px;
+        padding: 18px;
+        background: #fcfffd;
+    }
+
+    .store-card h3 {
+        margin: 0 0 6px;
+        font-size: 22px;
+        color: #166534;
+    }
+
+    .store-card p {
+        margin: 0 0 12px;
+        color: #475569;
+    }
+
+    .store-stock-badge {
+        display: inline-block;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #166534;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .store-gallery {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+    }
+
+    .store-image {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+    }
+
+    .store-image-empty,
+    .store-empty-text {
+        color: #64748b;
+        font-size: 15px;
+    }
+
+    @media (max-width: 991px) {
+        .extra-title {
+            font-size: 24px;
+        }
+
+        .extra-info-table th {
+            width: 160px;
+        }
+
+        .store-gallery {
+            grid-template-columns: repeat(2, minmax(120px, 1fr));
+        }
+    }
+
+    @media (max-width: 991px) {
+        .review-rating-box h2 {
+            font-size: 28px;
+        }
+
+        .review-rating-box p {
+            font-size: 16px;
+        }
+
+        .star {
+            font-size: 56px;
+        }
+
+        .rating-stars {
+            gap: 16px;
+        }
+
+        .thumb {
+            width: 90px;
+            height: 90px;
+        }
+    }
+</style>
+
+<section class="detail-page">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">Trang chủ</a>
+            <span>/</span>
+            <a href="{% url 'store:product_list' %}">Sản phẩm</a>
+            <span>/</span>
+            <span>{{ product.ten_san_pham }}</span>
+        </div>
+
+        <div class="detail-wrapper">
+            <div class="detail-gallery-card">
+                <div class="detail-badge-wrap">
+                    {% if product.is_khuyen_mai %}
+                        <span class="detail-sale-badge">Khuyến mãi</span>
+                    {% endif %}
+                    {% if product.so_luong > 0 %}
+                        <span class="detail-stock-badge in-stock">Còn hàng</span>
+                    {% else %}
+                        <span class="detail-stock-badge out-stock">Hết hàng</span>
+                    {% endif %}
+                </div>
+
+                <div class="detail-image-box">
+                    {% if images %}
+                        <button type="button" class="gallery-nav prev" onclick="changeSlide(-1)">&#10094;</button>
+
+                        <img
+                            id="mainImage"
+                            src="{{ images.0.image.url }}"
+                            alt="{{ product.ten_san_pham }}"
+                            class="detail-main-image"
+                        >
+
+                        <button type="button" class="gallery-nav next" onclick="changeSlide(1)">&#10095;</button>
+
+                        <div class="gallery-counter">
+                            <span id="currentImageIndex">1</span>/{{ images|length }}
+                        </div>
+                    {% else %}
+                        <div class="detail-main-image detail-no-image">Chưa có ảnh</div>
+                    {% endif %}
+                </div>
+
+                {% if images %}
+                <div class="thumbnail-strip-wrap">
+                    <button type="button" class="thumb-scroll-btn" onclick="scrollThumbs(-1)">&#10094;</button>
+
+                    <div class="thumbnail-strip" id="thumbnailStrip">
+                        {% for img in images %}
+                            <img
+                                src="{{ img.image.url }}"
+                                alt="{{ product.ten_san_pham }} {{ forloop.counter }}"
+                                class="thumb {% if forloop.first %}active{% endif %}"
+                                onclick="setSlide({{ forloop.counter0 }})"
+                            >
+                        {% endfor %}
+                    </div>
+
+                    <button type="button" class="thumb-scroll-btn" onclick="scrollThumbs(1)">&#10095;</button>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="detail-info-card">
+                <div class="detail-category-line">
+                    Danh mục:
+                    <strong>{{ product.loai.ten_loai }}</strong>
+                </div>
+
+                <h1 class="detail-title">{{ product.ten_san_pham }}</h1>
+
+                <p class="detail-desc">
+                    {% if product.mo_ta %}
+                        {{ product.mo_ta }}
+                    {% else %}
+                        Sản phẩm chất lượng, phù hợp cho nhu cầu mua sắm hằng ngày của gia đình.
+                    {% endif %}
+                </p>
+
+                <div class="detail-price-box">
+                    {% if product.is_khuyen_mai and product.gia_khuyen_mai %}
+                        <div class="detail-price-group">
+                            <span class="detail-price-sale">{{ product.gia_khuyen_mai|vnd }}</span>
+                            {% if product.gia_goc %}
+                                <span class="detail-price-old">{{ product.gia_goc|vnd }}đ</span>
+                            {% endif %}
+                        </div>
+                        <span class="discount-note">Giá ưu đãi hôm nay</span>
+                    {% else %}
+                        <div class="detail-price-group">
+                            <span class="detail-price-sale">{{ product.don_gia|vnd }}đ</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="detail-meta-grid">
+                   <div class="meta-item">
+                        <span class="meta-label">Tình trạng</span>
+                        <strong>
+                            {% if product.da_chon_cua_hang %}
+                                {% if product.ton_kho_hien_tai > 0 %}
+                                    <span style="color: #0b9445;">Còn hàng</span>
+                                {% else %}
+                                    <span style="color: #d8232a;">Tạm hết</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #f39c12;">Chưa chọn KV</span>
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="meta-item">
+                        <span class="meta-label">Giao hàng</span>
+                        <strong>Hỗ trợ giao nhanh</strong>
+                    </div>
+
+                    <div class="meta-item">
+                        <span class="meta-label">Thanh toán</span>
+                        <strong>COD khi nhận hàng</strong>
+                    </div>
+                </div>
+
+                <!-- BẢNG BÁO TỒN KHO Ở TRANG CHI TIẾT -->
+<div style="margin-top: 15px; margin-bottom: 15px; font-size: 15px; padding: 12px; background: #eef8f2; border-radius: 8px; border: 1px solid #008a37; display: inline-block; width: 100%;">
+    {% if product.da_chon_cua_hang %}
+        <div style="color: #64748b; margin-bottom: 5px;">📍 Đang kiểm tra tại: <strong>{{ selected_store_name }}</strong></div>
+        {% if product.ton_kho_hien_tai > 0 %}
+            <div style="color: #0b9445; font-weight: bold; font-size: 16px;">✓ Còn {{ product.ton_kho_hien_tai }} sản phẩm</div>
+        {% else %}
+            <div style="color: #d8232a; font-weight: bold; font-size: 16px;">✕ Tạm hết hàng ở chi nhánh này</div>
+        {% endif %}
+    {% else %}
+        <div style="color: #f39c12; font-weight: bold;">⚠️ Vui lòng ra Trang chủ định vị địa chỉ để xem tồn kho chuẩn nhất</div>
+    {% endif %}
+</div>
+
+                <div class="detail-note-box">
+                    <p>Cam kết sản phẩm rõ nguồn gốc, giá minh bạch, phù hợp mua sắm hằng ngày.</p>
+                </div>
+            </div>
+        </div>
+
+
+        <section class="product-extra-section">
+            <div class="product-extra-card">
+                <h2 class="extra-title">Thông tin chi tiết sản phẩm</h2>
+                <div class="extra-table-wrap">
+                    <table class="extra-info-table">
+                        <tbody>
+                            <tr>
+                                <th>Mô tả</th>
+                                <td>{{ product.mo_ta|default:"Đang cập nhật" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Thành phần</th>
+                                <td>{{ product.thanh_phan|default:"Đang cập nhật" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Công dụng</th>
+                                <td>{{ product.cong_dung|default:"Đang cập nhật" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Cách sử dụng</th>
+                                <td>{{ product.cach_su_dung|default:"Đang cập nhật" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Bảo quản</th>
+                                <td>{{ product.bao_quan|default:"Đang cập nhật" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Quy cách đóng gói</th>
+                                <td>{{ product.quy_cach_dong_goi|default:"Đang cập nhật" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Xuất xứ</th>
+                                <td>{{ product.xuat_xu|default:"Đang cập nhật" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Hạn sử dụng</th>
+                                <td>{{ product.han_su_dung|default:"Đang cập nhật" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Lưu ý</th>
+                                <td>{{ product.luu_y|default:"Đang cập nhật" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="product-review-section">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="comment-message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <section class="review-comment-section">
+                <div class="review-rating-box">
+                    <h2>Đánh giá sản phẩm này</h2>
+                    <p>
+                        Nếu đã mua sản phẩm này, hãy đánh giá ngay để giúp nhiều người chọn mua hàng tốt hơn nhé!
+                    </p>
+
+                    {% if request.session.tai_khoan_id %}
+                        {% if my_comment %}
+                            <form method="post" id="commentForm" action="{% url 'store:edit_product_comment' my_comment.id %}">
+                                {% csrf_token %}
+                                {{ comment_form.so_sao }}
+
+                                <div class="rating-stars">
+                                    <div class="rating-item" onclick="setRating(1)">
+                                        <span class="star" data-value="1">☆</span>
+                                        <span>Rất tệ</span>
+                                    </div>
+                                    <div class="rating-item" onclick="setRating(2)">
+                                        <span class="star" data-value="2">☆</span>
+                                        <span>Tệ</span>
+                                    </div>
+                                    <div class="rating-item" onclick="setRating(3)">
+                                        <span class="star" data-value="3">☆</span>
+                                        <span>Tạm ổn</span>
+                                    </div>
+                                    <div class="rating-item" onclick="setRating(4)">
+                                        <span class="star" data-value="4">☆</span>
+                                        <span>Tốt</span>
+                                    </div>
+                                    <div class="rating-item" onclick="setRating(5)">
+                                        <span class="star" data-value="5">☆</span>
+                                        <span>Rất tốt</span>
+                                    </div>
+                                </div>
+
+                                <div class="comment-box">
+                                    <h3>Sửa bình luận của bạn</h3>
+                                    <textarea
+                                        name="noi_dung"
+                                        id="commentContentInput"
+                                        class="comment-box-input"
+                                        rows="4"
+                                        placeholder="Mời bạn bình luận hoặc đặt câu hỏi"
+                                    >{{ my_comment.noi_dung }}</textarea>
+                                </div>
+
+                                <button type="submit" class="btn-submit-comment">Lưu chỉnh sửa</button>
+                            </form>
+                        {% else %}
+                            <form method="post" id="commentForm">
+                                {% csrf_token %}
+                                {{ comment_form.so_sao }}
+
+                                <div class="rating-stars">
+                                    <div class="rating-item" onclick="setRating(1)">
+                                        <span class="star" data-value="1">☆</span>
+                                        <span>Rất tệ</span>
+                                    </div>
+                                    <div class="rating-item" onclick="setRating(2)">
+                                        <span class="star" data-value="2">☆</span>
+                                        <span>Tệ</span>
+                                    </div>
+                                    <div class="rating-item" onclick="setRating(3)">
+                                        <span class="star" data-value="3">☆</span>
+                                        <span>Tạm ổn</span>
+                                    </div>
+                                    <div class="rating-item" onclick="setRating(4)">
+                                        <span class="star" data-value="4">☆</span>
+                                        <span>Tốt</span>
+                                    </div>
+                                    <div class="rating-item" onclick="setRating(5)">
+                                        <span class="star" data-value="5">☆</span>
+                                        <span>Rất tốt</span>
+                                    </div>
+                                </div>
+
+                                <div class="comment-box">
+                                    <h3>Bình luận</h3>
+                                    {{ comment_form.noi_dung }}
+                                </div>
+
+                                <button type="submit" class="btn-submit-comment">Gửi bình luận</button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                    <div class="login-required-box">
+                        <p>Vui lòng đăng nhập bằng số điện thoại hoặc email để đánh giá và bình luận.</p>
+                        <a href="{% url 'store:login' %}" class="btn-submit-comment">Đăng nhập</a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="comment-list-box">
+                    <h3>Bình luận</h3>
+
+                    {% for item in binh_luans %}
+                    <div class="comment-item">
+                        <div class="comment-topbar">
+                            <div class="comment-author-wrap">
+                                <div class="comment-author">{{ item.tai_khoan.ho_ten }}</div>
+                                <div class="comment-rating">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= item.so_sao %}
+                                            <span class="filled-star">★</span>
+                                        {% else %}
+                                            <span class="empty-star">☆</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            {% if request.session.tai_khoan_id == item.tai_khoan.id %}
+                            <div class="comment-menu-wrap">
+                                <button
+                                    type="button"
+                                    class="comment-menu-btn"
+                                    onclick="toggleCommentMenu(event, 'menu-{{ item.id }}')"
+                                >
+                                    ⋯
+                                </button>
+
+                                <div class="comment-menu-dropdown" id="menu-{{ item.id }}">
+                                    <a
+                                        href="#commentForm"
+                                        class="comment-menu-link"
+                                        onclick="fillEditForm('{{ item.id }}', '{{ item.so_sao }}', `{{ item.noi_dung|escapejs }}`)"
+                                    >
+                                        Sửa
+                                    </a>
+
+                                    <form method="post" action="{% url 'store:delete_product_comment' item.id %}">
+                                        {% csrf_token %}
+                                        <button
+                                            type="submit"
+                                            class="comment-menu-delete"
+                                            onclick="return confirm('Bạn có chắc muốn xóa bình luận này không?');"
+                                        >
+                                            Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="comment-content">{{ item.noi_dung }}</div>
+                        <div class="comment-date">{{ item.created_at|date:"d/m/Y H:i" }}</div>
+                    </div>
+                    {% empty %}
+                    <p>Chưa có bình luận nào cho sản phẩm này.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </section>
+    </div>
+</section>
+
+{% if images %}
+<script>
+    const imageList = [
+        {% for img in images %}
+            "{{ img.image.url }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    let currentIndex = 0;
+
+    function updateGallery() {
+        const mainImage = document.getElementById("mainImage");
+        const currentText = document.getElementById("currentImageIndex");
+        const thumbs = document.querySelectorAll(".thumb");
+
+        if (!mainImage || imageList.length === 0) return;
+
+        mainImage.src = imageList[currentIndex];
+
+        if (currentText) {
+            currentText.textContent = currentIndex + 1;
+        }
+
+        thumbs.forEach((thumb, index) => {
+            thumb.classList.toggle("active", index === currentIndex);
+        });
+
+        if (thumbs[currentIndex]) {
+            thumbs[currentIndex].scrollIntoView({
+                behavior: "smooth",
+                inline: "center",
+                block: "nearest"
+            });
+        }
+    }
+
+    function changeSlide(step) {
+        currentIndex = (currentIndex + step + imageList.length) % imageList.length;
+        updateGallery();
+    }
+
+    function setSlide(index) {
+        currentIndex = index;
+        updateGallery();
+    }
+
+    function scrollThumbs(direction) {
+        const strip = document.getElementById("thumbnailStrip");
+        if (!strip) return;
+
+        strip.scrollBy({
+            left: direction * 220,
+            behavior: "smooth"
+        });
+    }
+</script>
+{% endif %}
+
+<script>
+    const editCommentUrlTemplate = "{% url 'store:edit_product_comment' 999999 %}";
+
+    function setRating(value) {
+        const ratingInput = document.getElementById("id_so_sao");
+        const stars = document.querySelectorAll(".star");
+
+        if (ratingInput) {
+            ratingInput.value = value;
+        }
+
+        stars.forEach((star, index) => {
+            if (index < value) {
+                star.textContent = "★";
+                star.classList.add("active");
+            } else {
+                star.textContent = "☆";
+                star.classList.remove("active");
+            }
+        });
+    }
+
+    function toggleCommentMenu(event, menuId) {
+        event.stopPropagation();
+
+        document.querySelectorAll(".comment-menu-dropdown").forEach(menu => {
+            if (menu.id !== menuId) {
+                menu.classList.remove("show");
+            }
+        });
+
+        const menu = document.getElementById(menuId);
+        if (menu) {
+            menu.classList.toggle("show");
+        }
+    }
+
+    document.addEventListener("click", function () {
+        document.querySelectorAll(".comment-menu-dropdown").forEach(menu => {
+            menu.classList.remove("show");
+        });
+    });
+
+    function fillEditForm(commentId, soSao, noiDung) {
+        const form = document.getElementById("commentForm");
+        const ratingInput = document.getElementById("id_so_sao");
+        const contentInput = document.getElementById("commentContentInput");
+
+        if (form) {
+            form.action = editCommentUrlTemplate.replace("999999", commentId);
+        }
+
+        if (ratingInput) {
+            ratingInput.value = soSao;
+            setRating(parseInt(soSao));
+        }
+
+        if (contentInput) {
+            contentInput.value = noiDung;
+            contentInput.focus();
+        }
+
+        document.querySelectorAll(".comment-menu-dropdown").forEach(menu => {
+            menu.classList.remove("show");
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        {% if my_comment %}
+            setRating({{ my_comment.so_sao }});
+        {% else %}
+            setRating(5);
+        {% endif %}
+    });
+</script>
+{% endblock %}

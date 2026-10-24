@@ -1,0 +1,337 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load currency_filters %}
+{% block title %}Danh sách sản phẩm{% endblock %}
+
+{% block content %}
+<style>
+    /* Ép các thẻ sản phẩm cao bằng nhau trên cùng 1 hàng */
+    .product-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    /* Ép phần thông tin (tên, giá) tự động giãn ra để chiếm hết khoảng trống */
+    .product-info {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    /* Đẩy phần nút bấm dính chặt xuống đáy của thẻ */
+    .product-actions {
+        margin-top: auto; 
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding-top: 15px; /* Thêm tí khoảng cách cho thoáng */
+    }
+
+    /* Làm 2 nút to đều nhau 50-50 */
+    .product-actions .btn-detail, 
+    .product-actions .btn-add {
+        flex: 1;
+        text-align: center;
+        padding: 8px 0;
+    }
+</style>
+<section class="listing-page">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'store:home' %}">Trang chủ</a>
+            <span>/</span>
+            <span>Sản phẩm</span>
+        </div>
+
+        <div class="listing-header-box">
+            <div>
+                <h1 class="listing-title">Tất cả sản phẩm</h1>
+                <p class="listing-subtitle">
+                    Mua sắm tiện lợi với nhiều mặt hàng thiết yếu cho gia đình.
+                </p>
+            </div>
+            <div class="listing-count">
+                {{ page_obj.paginator.count }} sản phẩm
+            </div>
+        </div>
+
+        <div class="listing-layout">
+            <aside class="filter-sidebar">
+                <h3>Danh mục</h3>
+                <ul>
+                    <li>
+                        <a href="{% url 'store:product_list' %}"
+                            class="{% if not selected_category %}active-category{% endif %}">
+                            Tất cả
+                        </a>
+                    </li>
+
+                    {% for category in categories %}
+                    <li>
+                        <a href="{% url 'store:product_list' %}?category={{ category.id }}{% if query %}&q={{ query }}{% endif %}"
+                            class="{% if selected_category == category.id|stringformat:'s' %}active-category{% endif %}">
+                            {{ category.ten_loai }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="price-filter">
+                    <h3>Lọc theo giá</h3>
+                    <ul>
+                        <li>
+                            <a href="{% url 'store:product_list' %}?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if query %}q={{ query }}&{% endif %}price=under_50"
+                                class="{% if selected_price == 'under_50' %}active-category{% endif %}">
+                                Dưới 50.000đ
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'store:product_list' %}?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if query %}q={{ query }}&{% endif %}price=50_100"
+                                class="{% if selected_price == '50_100' %}active-category{% endif %}">
+                                50.000đ - 100.000đ
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'store:product_list' %}?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if query %}q={{ query }}&{% endif %}price=over_100"
+                                class="{% if selected_price == 'over_100' %}active-category{% endif %}">
+                                Trên 100.000đ
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'store:product_list' %}?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if query %}q={{ query }}{% endif %}"
+                                class="{% if not selected_price %}active-category{% endif %}">
+                                Tất cả mức giá
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="sidebar-note">
+                    <strong>Gợi ý hôm nay</strong>
+                    <p>Chọn thực phẩm tươi ngon, giá tốt và ưu đãi mỗi ngày.</p>
+                </div>
+            </aside>
+
+            <div class="listing-content">
+                {% if query %}
+                <div class="search-result-info">
+                    Kết quả tìm kiếm cho: <strong>"{{ query }}"</strong>
+                </div>
+                {% endif %}
+
+                <div class="product-grid product-grid-4">
+                    {% for product in page_obj %}
+                    <div class="product-card">
+                        <a href="{% url 'store:product_detail' product.id %}" class="product-image-wrap">
+                            {% if product.anh_chinh %}
+                            <img src="{{ product.anh_chinh.image.url }}" alt="{{ product.ten_san_pham }}"
+                                class="product-image">
+                            {% else %}
+                            <div class="product-image placeholder-image">Chưa có ảnh</div>
+                            {% endif %}
+
+                            {% if product.is_khuyen_mai %}
+                            <span class="product-badge-sale">Sale</span>
+                            {% endif %}
+                        </a>
+
+                        <div class="product-info">
+                            <div class="product-category">
+                                {{ product.loai.ten_loai }}
+                            </div>
+
+                            <h3 class="product-name">
+                                <a href="{% url 'store:product_detail' product.id %}">
+                                    {{ product.ten_san_pham }}
+                                </a>
+                            </h3>
+
+                            {% if product.mo_ta %}
+                            <p class="product-desc">{{ product.mo_ta|truncatechars:55 }}</p>
+                            {% else %}
+                            <p class="product-desc">Sản phẩm thiết yếu cho gia đình, dễ chọn và dễ mua mỗi ngày.</p>
+                            {% endif %}
+
+                            <div class="product-price-row">
+                                {% if product.is_khuyen_mai and product.gia_khuyen_mai %}
+                                <div class="price-group">
+                                    {% if product.gia_goc %}
+                                    <span class="old-price">{{ product.gia_goc|vnd }}</span>
+                                    {% endif %}
+                                    <span class="price">{{ product.gia_khuyen_mai|vnd }}</span>
+                                </div>
+                                <span class="sale-badge">Giảm giá</span>
+                                {% else %}
+                                <span class="price">{{ product.don_gia|vnd }}</span>
+                                {% endif %}
+                            </div>
+
+                           <!-- BẢNG TỒN KHO MỚI ĐƯỢC ĐƯA RA NGOÀI -->
+                            <div style="margin-top: 8px; font-size: 13px; margin-bottom: 10px;">
+                                {% if product.da_chon_cua_hang %}
+                                    {% if product.ton_kho_hien_tai > 0 %}
+                                        <div style="color: #0b9445; font-weight: bold;">✓ Còn {{ product.ton_kho_hien_tai }} SP</div>
+                                    {% else %}
+                                        <div style="color: #d8232a; font-weight: bold;">✕ Tạm hết hàng</div>
+                                    {% endif %}
+                                {% else %}
+                                    <div style="color: #f39c12; font-style: italic; font-size: 12px;">Vui lòng chọn địa chỉ để xem tồn kho</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- 2 NÚT BẤM CÂN ĐỐI 50-50 -->
+                            <div class="product-actions">
+                                <a href="{% url 'store:product_detail' product.id %}" class="btn-detail">Xem chi tiết</a>
+
+                                {% if product.ton_kho_hien_tai > 0 %}
+                                    <a href="{% url 'store:add_to_cart' product.id %}" class="btn-add ajax-add-cart">Thêm giỏ</a>
+                                {% else %}
+                                    <span class="btn-disabled" style="background: #e2e8f0; color: #94a3b8; padding: 8px 0; text-align: center; border-radius: 8px; flex: 1;">Hết hàng</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-box">
+                        <h3>Không tìm thấy sản phẩm</h3>
+                        <p>Hãy thử lại với từ khóa khác hoặc chọn danh mục khác.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if page_obj.paginator.num_pages > 1 %}
+                <div class="pagination-wrap">
+                    <div class="pagination">
+                        {% if page_obj.has_previous %}
+                        <a class="page-btn"
+                            href="?page=1{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+                            Đầu
+                        </a>
+                        <a class="page-btn"
+                            href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+                            ‹ Trước
+                        </a>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
+                        <span class="page-btn active">{{ num }}</span>
+                        {% elif num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %} <a class="page-btn"
+                            href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+                            {{ num }}
+                            </a>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <a class="page-btn"
+                                href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+                                Sau ›
+                            </a>
+                            <a class="page-btn"
+                                href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+                                Cuối
+                            </a>
+                            {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+<style>
+    #toast-container {
+        position: fixed;
+        bottom: 30px; /* Hiện ở góc dưới cùng */
+        right: 30px;  /* Bên phải màn hình */
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .toast-msg {
+        background-color: #008a37; /* Màu xanh lá Bách Hóa Xanh */
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        /* Hiệu ứng trượt và mờ dần */
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+    }
+    .toast-msg.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+</style>
+
+<div id="toast-container"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Hàm tạo và hiển thị thông báo tự tắt
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            // Tạo thẻ div chứa thông báo
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.innerHTML = '🛒 <span>' + message + '</span>'; // Thêm icon xe đẩy cho sinh động
+
+            // Nhét vào container
+            container.appendChild(toast);
+
+            // Kích hoạt hiệu ứng trượt ra (sau 10ms để CSS kịp nhận)
+            setTimeout(() => { toast.classList.add('show'); }, 10);
+
+            // Hẹn giờ 3 giây (3000ms) sau tự động tắt
+            setTimeout(() => {
+                toast.classList.remove('show'); // Trượt mất tích
+                // Chờ hiệu ứng trượt xong (400ms) thì xóa hẳn thẻ div cho nhẹ web
+                setTimeout(() => { toast.remove(); }, 400);
+            }, 3000);
+        }
+
+        // Lắng nghe sự kiện click nút Thêm giỏ
+        const addCartButtons = document.querySelectorAll('.ajax-add-cart');
+
+        addCartButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault(); 
+                
+                const url = this.getAttribute('href'); 
+
+                fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        
+                        // ===== GỌI HÀM TOAST THAY VÌ ALERT =====
+                        showToast(data.message);
+                        // ========================================
+
+                        const cartCountBadge = document.querySelector('.cart-count');
+                        if (cartCountBadge) {
+                            cartCountBadge.innerText = data.cart_count;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Lỗi:", error);
+                    showToast("❌ Có lỗi xảy ra, vui lòng thử lại!"); // Báo lỗi cũng dùng Toast luôn
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

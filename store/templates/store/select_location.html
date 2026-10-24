@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Chọn vị trí giao hàng{% endblock %}
+
+{% block content %}
+<section class="container">
+    <div class="card location-page">
+        <div class="section-title">
+            <h1>Chọn vị trí giao hàng</h1>
+            <p>Điền địa chỉ để hệ thống hiển thị đúng sản phẩm, phí giao và thời gian giao hàng.</p>
+        </div>
+
+        <form method="post" class="location-form">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="city">Tỉnh / thành</label>
+                    <input type="text" id="city" name="city" placeholder="VD: TP. Hồ Chí Minh" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="district">Quận / huyện</label>
+                    <input type="text" id="district" name="district" placeholder="VD: Quận 7" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="ward">Phường / xã</label>
+                    <input type="text" id="ward" name="ward" placeholder="VD: Tân Phú" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="detail">Số nhà, tên đường</label>
+                    <input type="text" id="detail" name="detail" placeholder="VD: 123 Nguyễn Thị Thập" required>
+                </div>
+
+                <div class="form-group full">
+                    <label for="note">Ghi chú giao hàng</label>
+                    <textarea id="note" name="note" rows="4" placeholder="Ví dụ: gọi trước khi giao, giao giờ hành chính..."></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="primary-btn">Xác nhận vị trí giao hàng</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

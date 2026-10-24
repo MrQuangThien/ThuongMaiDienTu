@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Giới thiệu về chúng tôi{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #008a37; font-size: 32px; margin-bottom: 10px;">Hệ Thống Siêu Thị Trực Tuyến</h1>
+        <p style="font-size: 16px; color: #666;">Cam kết mang đến thực phẩm tươi sạch và tiện lợi mỗi ngày</p>
+    </div>
+
+   <!-- BANNER BẰNG CSS ĐẸP LUNG LINH KHÔNG CẦN ẢNH -->
+<div style="width: 100%; border-radius: 10px; margin-bottom: 30px; background: linear-gradient(120deg, #008a37 0%, #10b981 100%); height: 200px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,138,55,0.3);">
+    <div style="text-align: center; color: white;">
+        <svg width="64" height="64" fill="currentColor" viewBox="0 0 24 24" style="margin-bottom: 10px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        <h2 style="margin: 0; font-size: 24px; letter-spacing: 1px;">GIAO HÀNG TẬN NƠI - TƯƠI NGON MỖI NGÀY</h2>
+    </div>
+</div>
+    <h2 style="color: #008a37; border-bottom: 2px solid #008a37; padding-bottom: 8px; display: inline-block;">1. Tầm nhìn và Sứ mệnh</h2>
+    <p>Chúng tôi định hướng trở thành nền tảng mua sắm nhu yếu phẩm hàng đầu, áp dụng công nghệ để rút ngắn khoảng cách từ nông trại đến bàn ăn. Sứ mệnh của chúng tôi là cung cấp trải nghiệm mua sắm trực tuyến nhanh chóng, hàng hóa nguồn gốc rõ ràng và giá cả bình ổn.</p>
+
+    <h2 style="color: #008a37; border-bottom: 2px solid #008a37; padding-bottom: 8px; display: inline-block; margin-top: 20px;">2. Giá trị cốt lõi</h2>
+    <ul style="list-style-type: none; padding: 0;">
+        <li style="margin-bottom: 15px; padding-left: 24px; position: relative;">
+            <span style="position: absolute; left: 0; color: #008a37; font-weight: bold;">✓</span>
+            <strong>Chất lượng hàng đầu:</strong> 100% sản phẩm qua kiểm định nghiêm ngặt.
+        </li>
+        <li style="margin-bottom: 15px; padding-left: 24px; position: relative;">
+            <span style="position: absolute; left: 0; color: #008a37; font-weight: bold;">✓</span>
+            <strong>Giao hàng siêu tốc:</strong> Tính toán lộ trình thông minh, giao hàng từ chi nhánh gần nhất trong 2 giờ.
+        </li>
+        <li style="margin-bottom: 15px; padding-left: 24px; position: relative;">
+            <span style="position: absolute; left: 0; color: #008a37; font-weight: bold;">✓</span>
+            <strong>Công nghệ tối ưu:</strong> Hệ thống tồn kho Real-time (thời gian thực) giúp khách hàng biết chính xác tình trạng hàng hóa tại khu vực của mình.
+        </li>
+    </ul>
+
+    <h2 style="color: #008a37; border-bottom: 2px solid #008a37; padding-bottom: 8px; display: inline-block; margin-top: 20px;">3. Đội ngũ phát triển</h2>
+    <p>Dự án được xây dựng và phát triển bởi <strong>Team GIS</strong>. Chúng tôi áp dụng kiến thức Hệ thống thông tin (GIS) và ngôn ngữ Python (Django) để tạo ra các giải pháp bản đồ và quản lý kho vận thông minh.</p>
+</div>
+{% endblock %}

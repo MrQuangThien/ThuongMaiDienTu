@@ -1,0 +1,54 @@
+
+{% extends "store/admin/base_admin.html" %}
+{% block admin_title %}Quản lý tài khoản{% endblock %}
+{% block admin_content %}
+<div class="toolbar">
+    <form method="get" class="filter-form">
+        <input type="text" name="q" value="{{ q }}" placeholder="Tìm username hoặc họ tên...">
+        <select name="role">
+            <option value="">Tất cả quyền</option>
+            {% for value, label in role_choices %}
+                <option value="{{ value }}" {% if role == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Lọc</button>
+    </form>
+    <a href="{% url 'store:admin_account_create' %}" class="btn-primary">+ Thêm tài khoản</a>
+</div>
+
+<div class="table-wrap">
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Họ tên</th>
+            <th>Điện thoại</th>
+            <th>Quyền</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in page_obj %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.username }}</td>
+            <td>{{ item.ho_ten }}</td>
+            <td>{{ item.dien_thoai }}</td>
+            <td>{{ item.role }}</td>
+            <td>{{ item.trang_thai }}</td>
+            <td class="actions">
+                <a href="{% url 'store:admin_account_edit' item.id %}">Sửa</a>
+                <a href="{% url 'store:admin_account_delete' item.id %}" class="danger-link">Xóa</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Không có dữ liệu.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% include "store/admin/pagination.html" with page_obj=page_obj %}
+{% endblock %}

@@ -1,0 +1,1654 @@
+{% load currency_filters %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #eef1f4;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #1f2a44;
+        }
+        a { text-decoration: none; color: inherit; }
+        button, input, select, textarea { font-family: inherit; }
+
+        .app-shell {
+            max-width: 760px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: #eef1f4;
+            padding-bottom: 110px;
+        }
+
+        .topbar {
+            height: 56px;
+            background: #fff;
+            display: grid;
+            grid-template-columns: 48px 1fr 48px;
+            align-items: center;
+            padding: 0 8px;
+            border-bottom: 1px solid #e6ebf0;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .topbar-back {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #4b5563;
+        }
+
+        .topbar-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: #2a2f36;
+        }
+
+        .page-body { padding: 10px; }
+
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            border: 1px solid #e7edf3;
+        }
+
+        .error-box {
+            padding: 12px 16px;
+            background: #fff1f2;
+            color: #dc2626;
+            border: 1px solid #fecdd3;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .delivery-tabs {
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            background: #edf1f5;
+            border-radius: 14px;
+        }
+
+        .delivery-tab {
+            text-align: center;
+            padding: 12px 10px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #99a2b2;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+
+        .delivery-tab.active {
+            background: #fff;
+            color: #058b3f;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .free-ship {
+            position: absolute;
+            right: 14px;
+            top: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #058b3f;
+        }
+
+        .info-row {
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+        }
+
+        .click-row { cursor: pointer; }
+
+        .info-main {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #23314d;
+        }
+
+        .info-main strong { font-size: 15px; }
+
+        .info-sub {
+            margin-top: 4px;
+            color: #5d6b82;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .arrow {
+            flex-shrink: 0;
+            font-size: 26px;
+            color: #94a3b8;
+            line-height: 1;
+        }
+
+        .green-row {
+            color: #058b3f;
+            font-weight: 700;
+        }
+
+        .hidden { display: none !important; }
+
+        .section-pad {
+            padding: 14px 16px 16px;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #22314d;
+        }
+
+        .option-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .radio-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #dfe7ef;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .radio-line.active {
+            border-color: #0b9445;
+            background: #edf8ef;
+        }
+
+        .input-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .field {
+            width: 100%;
+            height: 48px;
+            border: 1px solid #d8e0ea;
+            border-radius: 12px;
+            padding: 0 14px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .textarea {
+            width: 100%;
+            min-height: 90px;
+            border: 1px solid #d8e0ea;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 15px;
+            outline: none;
+            resize: vertical;
+        }
+
+        .mini-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .mini-btn {
+            height: 42px;
+            border: 1px solid #dbe5ee;
+            background: #f8fafc;
+            padding: 0 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #334155;
+            cursor: pointer;
+        }
+
+        .product-card { padding: 14px 14px 10px; }
+
+        .product-row {
+            display: grid;
+            grid-template-columns: 84px 1fr auto;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .product-thumb {
+            width: 84px;
+            position: relative;
+        }
+
+        .product-thumb-box {
+            width: 72px;
+            height: 72px;
+            border-radius: 10px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid #eceff4;
+        }
+
+        .product-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .remove-dot-btn {
+            position: absolute;
+            left: -2px;
+            top: -2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #dbe3ef;
+            color: #64748b;
+            font-size: 13px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .product-name {
+            font-size: 14px;
+            color: #22314d;
+            line-height: 1.45;
+            margin-bottom: 10px;
+            padding-top: 2px;
+        }
+
+        .price-col {
+            min-width: 140px;
+            text-align: right;
+        }
+
+        .sale-price {
+            font-size: 15px;
+            font-weight: 700;
+            color: #22314d;
+        }
+
+        .old-price {
+            margin-top: 2px;
+            font-size: 12px;
+            text-decoration: line-through;
+            color: #9aa5b5;
+        }
+
+        .qty-row {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .qty-box {
+            display: grid;
+            grid-template-columns: 36px 44px 36px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e8edf2;
+            background: #f5f7fa;
+        }
+
+        .qty-box button,
+        .qty-box span {
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-box button {
+            border: none;
+            background: #f1f4f8;
+            font-size: 24px;
+            color: #56657d;
+            cursor: pointer;
+        }
+
+        .qty-box button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .qty-box span {
+            background: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            color: #23314d;
+        }
+
+        .unit-line {
+            margin-top: 8px;
+            text-align: right;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .stock-ok {
+            color: #058b3f;
+            font-weight: 700;
+        }
+
+        .stock-bad {
+            color: #d8232a;
+            font-weight: 700;
+        }
+
+        .stock-warn {
+            color: #f59e0b;
+            font-weight: 700;
+        }
+
+        .summary-card { padding: 10px 16px; }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            font-size: 13px;
+            color: #22314d;
+        }
+
+        .summary-row.muted-right .right { color: #94a3b8; }
+
+        .summary-row.total { padding-top: 12px; }
+
+        .summary-row.total .left,
+        .summary-row.total .right {
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .summary-sub {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 10px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .payment-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px 10px;
+            font-size: 14px;
+            color: #22314d;
+        }
+
+        .payment-change {
+            color: #1e88e5;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .payment-option {
+            margin: 0 16px 16px;
+            border: 2px solid #22b35d;
+            background: #edf8ef;
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .payment-radio {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid #0b9445;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .payment-radio::after {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #0b9445;
+            top: 3px;
+            left: 3px;
+        }
+
+        .payment-icon { font-size: 24px; }
+        .payment-title { font-size: 15px; font-weight: 700; color: #22314d; }
+
+        .payment-badge {
+            margin-left: auto;
+            font-size: 12px;
+            color: #14a44d;
+            background: #daf5dd;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+        }
+
+        .vip-note {
+            padding: 0 14px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #1f2937;
+            line-height: 1.5;
+        }
+
+        .bottom-bar-wrap {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff;
+            border-top: 1px solid #e5ebf1;
+            padding: 10px;
+            z-index: 50;
+        }
+
+        .bottom-bar { max-width: 760px; margin: 0 auto; }
+
+        .order-btn {
+            width: 100%;
+            height: 52px;
+            border: none;
+            border-radius: 12px;
+            background: #8cc12e;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 6px 16px rgba(140, 193, 46, 0.28);
+            cursor: pointer;
+        }
+
+        .order-btn:disabled {
+            background: #94a3b8 !important;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .order-count {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #ffe600;
+            color: #2a2a2a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .empty-box {
+            text-align: center;
+            padding: 34px 20px;
+        }
+
+        .empty-box h3 {
+            margin: 0 0 8px;
+            font-size: 20px;
+            color: #23314d;
+        }
+
+        .empty-box p {
+            margin: 0 0 16px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .empty-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 44px;
+            padding: 0 20px;
+            border-radius: 10px;
+            background: #eef2f7;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 9999;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 420px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #22314d;
+        }
+
+        .modal-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #475569;
+            margin-bottom: 16px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            min-width: 92px;
+            height: 42px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .btn-cancel {
+            background: #eef2f7;
+            color: #334155;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        @media (max-width: 640px) {
+            .input-grid-2 { grid-template-columns: 1fr; }
+
+            .product-row { grid-template-columns: 76px 1fr; }
+
+            .price-col {
+                min-width: unset;
+                text-align: left;
+                grid-column: 2;
+            }
+
+            .qty-row,
+            .unit-line {
+                justify-content: flex-start;
+                text-align: left;
+            }
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* Lớp bản đồ nền tự chuyển nguồn: OpenStreetMap -> Esri -> CARTO (bản miễn phí) khi tile không tải được */
+window.bhxTileLayer = function () {
+    var providers = [
+        { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', sub: 'abc', attr: '&copy; OpenStreetMap contributors' },
+        { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', sub: '', attr: 'Tiles &copy; Esri' },
+        { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', sub: 'abcd', attr: '&copy; OpenStreetMap &copy; CARTO' }
+    ];
+    var group = L.layerGroup();
+    var index = -1, errors = 0, loaded = 0, timer = null;
+
+    function use(i) {
+        index = i; errors = 0; loaded = 0;
+        if (timer) clearTimeout(timer);
+        var p = providers[i];
+        var layer = L.tileLayer(p.url, { subdomains: p.sub || 'abc', maxZoom: 19, attribution: p.attr, referrerPolicy: 'origin' });
+        layer.on('tileload', function () { loaded++; });
+        layer.on('tileerror', function () {
+            errors++;
+            if (errors >= 3 && loaded === 0) next();
+        });
+        group.clearLayers();
+        group.addLayer(layer);
+        // Nếu sau 6 giây vẫn chưa có tile nào tải được thì chuyển nguồn
+        timer = setTimeout(function () { if (loaded === 0) next(); }, 6000);
+    }
+    function next() {
+        if (index < providers.length - 1) use(index + 1);
+    }
+    use(0);
+    return group;
+};
+</script>
+
+</head>
+<body>
+    <div class="app-shell">
+        <div class="topbar">
+            <a href="{% url 'store:home' %}" class="topbar-back">‹</a>
+            <div class="topbar-title">Giỏ hàng</div>
+            <div></div>
+        </div>
+
+        <div class="page-body">
+            {% if error %}
+                <div class="error-box">{{ error }}</div>
+            {% endif %}
+
+            {% if cart_items %}
+            <form id="checkout-options-form" method="post" action="{% url 'store:save_checkout_options' %}">
+                {% csrf_token %}
+                <input type="hidden" name="delivery_method" id="delivery_method_input" value="{{ delivery_method|default:'delivery' }}">
+                <input type="hidden" name="payment_method" id="payment_method_input" value="{{ payment_method|default:'BANK' }}">
+                <input type="hidden" name="delivery_time_slot" id="delivery_time_slot_input" value="{{ delivery_time_slot|default:'' }}">
+                <input type="hidden" name="address_type" id="address_type_input" value="{{ address_type|default:'current_location' }}">
+                <input type="hidden" name="selected_store_id" id="selected_store_id_input" value="{{ selected_store_id|default:'' }}">
+                <input type="hidden" name="selected_store_name" id="selected_store_name_input" value="{{ selected_store_name|default:'' }}">
+                <input type="hidden" name="selected_store_address" id="selected_store_address_input" value="{{ selected_store_address|default:'' }}">
+
+                <div class="card">
+                    <div class="delivery-tabs">
+                        <button type="button" id="tab-delivery" class="delivery-tab {% if delivery_method != 'pickup' %}active{% endif %}">Giao hàng tận nhà</button>
+                        <button type="button" id="tab-pickup" class="delivery-tab {% if delivery_method == 'pickup' %}active{% endif %}">Nhận tại cửa hàng</button>
+                        <span class="free-ship">Không phí SHIP</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="section-pad">
+                        <div class="section-title" id="store-section-title">
+                            {% if delivery_method == 'pickup' %}
+                                Chọn cửa hàng bạn sẽ đến nhận
+                            {% else %}
+                                Cửa hàng phục vụ (Sẽ giao đến nhà bạn)
+                            {% endif %}
+                        </div>
+
+                        <select class="field" id="store_select">
+                            <option value="">-- Chọn cửa hàng --</option>
+                            {% for store in stores %}
+                            <option
+                                value="{{ store.id }}"
+                                data-name="{{ store.ten_chi_nhanh }}"
+                                data-address="{{ store.dia_chi }}"
+                                data-lat="{{ store.latitude|stringformat:'f'|default:0 }}"
+                                data-lon="{{ store.longitude|stringformat:'f'|default:0 }}"
+                                {% if selected_store_id|stringformat:"s" == store.id|stringformat:"s" %}selected{% endif %}
+                            >
+                                {{ store.ten_chi_nhanh }} - {{ store.dia_chi }}
+                            </option>
+                            {% endfor %}
+                        </select>
+
+                        <div class="info-sub" style="margin-top:8px;" id="store-helper-text">
+                            💡 Gợi ý: Chọn vị trí của bạn để hệ thống tự động tìm cửa hàng gần nhất. Bạn có thể tự đổi nếu cửa hàng hết hàng.
+                        </div>
+
+                        <div class="mini-actions" id="btn-tim-cua-hang-wrap" style="{% if delivery_method != 'pickup' %}display:none;{% endif %}">
+                            <button type="button" class="mini-btn" id="btn-tim-cua-hang" onclick="layViTriVaTimCuaHang()" style="background: #008a37; color: white; border: none; font-weight: bold;">
+                                📍 Tìm cửa hàng gần tôi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="delivery-section" class="{% if delivery_method == 'pickup' %}hidden{% endif %}">
+                    <div class="card">
+                        <div class="section-pad">
+                            <div class="section-title">Thông tin người nhận</div>
+                            <div class="input-grid-2">
+                                <input class="field" type="text" name="ten_nguoi_nhan" placeholder="Tên người nhận *" value="{{ ten_nguoi_nhan|default:'' }}">
+                                <input class="field" type="text" name="sdt_nguoi_nhan" placeholder="Số điện thoại *" value="{{ sdt_nguoi_nhan|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="section-pad">
+                            <div class="section-title">Chọn địa chỉ nhận hàng</div>
+
+                            <div class="mini-actions" style="margin-bottom: 12px;">
+                                <button type="button" class="mini-btn" onclick="layViTriHienTai()" style="background: #f39c12; color: white; border: none;">📍 Lấy vị trí hiện tại</button>
+                                <button type="button" class="mini-btn" onclick="moBanDoChonDiaChi()" style="background: #008a37; color: white; border: none;">🗺️ Chọn từ bản đồ</button>
+                            </div>
+
+                            <div id="checkout-map-container" style="display: none; margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; background: #008a37; color: white; padding: 10px; border-radius: 12px 12px 0 0;">
+                                    <b style="font-size: 14px;">Bấm vào bản đồ để chọn điểm giao hàng</b>
+                                    <span onclick="dongBanDo()" style="cursor: pointer; font-weight: bold; background: #d8232a; padding: 4px 10px; border-radius: 6px; font-size: 13px;">✕ Đóng</span>
+                                </div>
+                                <div id="checkout-map" style="height: 350px; width: 100%; border: 2px solid #008a37; border-radius: 0 0 12px 12px; z-index: 1;"></div>
+                            </div>
+
+                            <div style="margin-top:12px;">
+                                <textarea class="textarea" name="dia_chi_giao_hang" id="dia_chi_giao_hang_textarea" placeholder="Nhập địa chỉ nhận hàng...">{{ dia_chi_giao_hang|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="info-row green-row click-row" onclick="toggleTimeSection()">
+                            <div>
+                                {% if delivery_time_slot %}
+                                    Thời gian giao: {{ delivery_time_slot }}
+                                {% else %}
+                                    Chọn thời gian giao hàng
+                                {% endif %}
+                            </div>
+                            <div class="arrow" id="time-arrow">⌄</div>
+                        </div>
+
+                        <div id="time-slot-box" class="section-pad {% if not delivery_time_slot %}hidden{% endif %}">
+                            <div class="option-grid">
+                                {% for slot in time_slots %}
+                                <label class="radio-line {% if delivery_time_slot == slot %}active{% endif %}">
+                                    <input type="radio" name="delivery_time_slot_radio" value="{{ slot }}" {% if delivery_time_slot == slot %}checked{% endif %}>
+                                    <span>Từ {{ slot }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pickup-section" class="{% if delivery_method != 'pickup' %}hidden{% endif %}">
+                    <div class="card">
+                        <div class="section-pad">
+                            <div class="section-title">Thông tin người nhận tại cửa hàng</div>
+                            <div class="input-grid-2">
+                                <input class="field" type="text" name="pickup_ten_nguoi_nhan" id="pickup_ten_nguoi_nhan" placeholder="Tên người nhận *" value="{{ ten_nguoi_nhan|default:'' }}">
+                                <input class="field" type="text" name="pickup_sdt_nguoi_nhan" id="pickup_sdt_nguoi_nhan" placeholder="Số điện thoại *" value="{{ sdt_nguoi_nhan|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="card">
+                <div class="product-card" id="cart-items-wrap">
+                    {% for item in cart_items %}
+                    <div class="product-row js-cart-item"
+                         data-product-id="{{ item.product_id }}"
+                         data-unit-price="{{ item.don_gia|floatformat:0 }}"
+                         data-stock="{{ item.so_luong_ton_chi_nhanh|default:0 }}"
+                         {% if not forloop.last %}style="margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid #eef2f7;"{% endif %}>
+                         <input type="hidden" class="js-update-url" value="{% url 'store:update_cart_quantity' item.product_id %}">
+                        <div class="product-thumb">
+                            <button type="button" class="remove-dot-btn" onclick="confirmRemove('{% url 'store:remove_from_cart' item.product_id %}', '{{ item.ten_san_pham|escapejs }}')">×</button>
+                            <div class="product-thumb-box">
+                                {% if item.hinh_anh_url %}
+                                    <img src="{{ item.hinh_anh_url }}" alt="{{ item.ten_san_pham }}">
+                                {% elif item.anh_chinh %}
+                                    <img src="{{ item.anh_chinh.image.url }}" alt="{{ item.ten_san_pham }}">
+                                {% else %}
+                                    <span>BHX</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="product-name">{{ item.ten_san_pham }}</div>
+                        </div>
+
+                        <div class="price-col">
+                            <div class="sale-price js-line-total">{{ item.thanh_tien|vnd }}</div>
+
+                            {% if item.gia_goc %}
+                            <div class="old-price">{{ item.gia_goc|vnd }}</div>
+                            {% endif %}
+
+                            <div class="qty-row">
+                                <div class="qty-box">
+                                    <button type="button" onclick="updateQuantity('{{ item.product_id }}', 'decrease', this)">−</button>
+                                    <span class="js-qty">{{ item.so_luong }}</span>
+                                    <button type="button" onclick="updateQuantity('{{ item.product_id }}', 'increase', this)">+</button>
+                                </div>
+                            </div>
+
+                            <div class="unit-line">Giá: <span class="js-unit-price-text">{{ item.don_gia|vnd }}</span></div>
+
+                            {% if selected_store_id %}
+                                {% if item.du_hang %}
+                                    <div class="unit-line stock-ok js-stock-text">
+                                        Còn {{ item.so_luong_ton_chi_nhanh }} sản phẩm tại chi nhánh đã chọn
+                                    </div>
+                                {% else %}
+                                    <div class="unit-line stock-bad js-stock-text">
+                                        Chỉ còn {{ item.so_luong_ton_chi_nhanh }} sản phẩm tại chi nhánh đã chọn, không đủ số lượng bạn mua
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="unit-line stock-warn js-stock-text">
+                                    Vui lòng chọn chi nhánh để kiểm tra tồn kho
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="summary-card">
+                    <div class="summary-row">
+                        <div class="left">Tiền hàng</div>
+                        <div class="right"><strong id="tong-tien-hang-text">{{ tong_tien|vnd }}</strong></div>
+                    </div>
+
+                    <div class="summary-row muted-right">
+                        <div class="left">Phí giao hàng ⓘ</div>
+                        <div class="right" id="phi-giao-hang-text">
+                            {% if delivery_method == 'pickup' %}
+                                Miễn phí
+                            {% else %}
+                                Chọn vị trí trên bản đồ để tính phí
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="summary-row muted-right">
+                        <div class="left">Phiếu mua hàng</div>
+                        <div class="right">Sử dụng ›</div>
+                    </div>
+
+                    <div class="summary-row total">
+                        <div class="left">Tổng tiền</div>
+                        <div class="right" id="tong-tien-text">{{ tong_tien|vnd }}</div>
+                    </div>
+
+                    <div class="summary-sub">
+                        <div>Điểm VIP tạm tính (cộng trong 24h)</div>
+                        <div id="vip-point-text">{% widthratio tong_tien 100 1 %} điểm</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="payment-head">
+                    <div>Hình thức thanh toán</div>
+                    <div class="payment-change" onclick="togglePaymentBox()">Đổi ›</div>
+                </div>
+
+                <div class="payment-option">
+                    <div class="payment-radio"></div>
+                    <div class="payment-icon" id="payment-icon">{% if payment_method == 'CASH' %}💵{% else %}🏦{% endif %}</div>
+                    <div class="payment-title" id="payment-title">{% if payment_method == 'CASH' %}Tiền mặt{% else %}Chuyển khoản{% endif %}</div>
+                    <div class="payment-badge" id="payment-badge">{% if payment_method == 'CASH' %}Thanh toán khi nhận{% else %}x2 điểm VIP{% endif %}</div>
+                </div>
+
+                <div id="payment-box" class="section-pad hidden">
+                    <div class="option-grid">
+                        <label class="radio-line {% if payment_method == 'BANK' %}active{% endif %}">
+                            <input type="radio" name="payment_method_radio" value="BANK" {% if payment_method == 'BANK' %}checked{% endif %}>
+                            <span>Chuyển khoản</span>
+                        </label>
+
+                        <label class="radio-line {% if payment_method == 'CASH' %}active{% endif %}">
+                            <input type="radio" name="payment_method_radio" value="CASH" {% if payment_method == 'CASH' %}checked{% endif %}>
+                            <span>Thanh toán bằng tiền mặt</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vip-note" id="vip-note">
+                {% if payment_method == 'CASH' %}
+                    Bạn đang chọn <strong>thanh toán bằng tiền mặt</strong> khi nhận hàng.
+                {% else %}
+                    Bạn được <strong>x2 điểm VIP</strong> tích lũy vì đã chọn <strong>chuyển khoản</strong>!
+                {% endif %}
+            </div>
+
+            <form id="checkout-submit-form" method="post" action="{% url 'store:checkout' %}">
+                {% csrf_token %}
+                <input type="hidden" name="delivery_method" id="checkout_delivery_method">
+                <input type="hidden" name="phuong_thuc_thanh_toan" id="checkout_payment_method">
+                <input type="hidden" name="delivery_time_slot" id="checkout_delivery_time_slot">
+                <input type="hidden" name="address_type" id="checkout_address_type">
+                <input type="hidden" name="dia_chi_giao_hang" id="checkout_dia_chi_giao_hang">
+                <input type="hidden" name="ten_nguoi_nhan" id="checkout_ten_nguoi_nhan">
+                <input type="hidden" name="sdt_nguoi_nhan" id="checkout_sdt_nguoi_nhan">
+                <input type="hidden" name="selected_store_id" id="checkout_selected_store_id">
+                <input type="hidden" name="selected_store_name" id="checkout_selected_store_name">
+                <input type="hidden" name="selected_store_address" id="checkout_selected_store_address">
+            </form>
+
+            {% else %}
+            <div class="card">
+                <div class="empty-box">
+                    <h3>Giỏ hàng đang trống</h3>
+                    <p>Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
+                    <a href="{% url 'store:product_list' %}" class="empty-link">Xem sản phẩm</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if cart_items %}
+    <div class="bottom-bar-wrap">
+        <div class="bottom-bar">
+            <button class="order-btn" type="button" id="btn-dat-hang" onclick="submitCheckout()">
+                <span class="order-count" id="order-count">{{ cart_items|length }}</span>
+                <span id="tong-tien-btn">Đặt hàng {{ tong_tien|vnd }}</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-mask" id="remove-modal">
+        <div class="modal">
+            <div class="modal-title">Xóa sản phẩm</div>
+            <div class="modal-text" id="remove-modal-text">Bạn có muốn xóa sản phẩm này không?</div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn btn-cancel" onclick="closeRemoveModal()">Hủy</button>
+                <form id="remove-form" method="post" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="modal-btn btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-mask" id="error-modal">
+        <div class="modal" style="text-align: center; padding: 25px 20px;">
+            <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">⚠️</div>
+            <div class="modal-title" style="color: #d8232a; font-size: 18px;">Thông báo</div>
+            <div class="modal-text" id="error-modal-text" style="font-size: 14px; margin-bottom: 24px; color: #475569;">Nội dung lỗi...</div>
+            <button type="button" class="modal-btn" onclick="closeErrorModal()" style="background: #008a37; color: white; width: 100%; height: 46px; font-size: 16px;">Đã hiểu</button>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        // ========================================================
+        // 1. BIẾN TOÀN CỤC
+        // ========================================================
+        var tongTienHang = parseFloat("{{ tong_tien|stringformat:'f'|default:'0' }}");
+        var khachLat = 0;
+        var khachLon = 0;
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        function formatVND(tien) {
+            return Number(tien || 0).toLocaleString('vi-VN') + "đ";
+        }
+
+        function tinhKhoangCachKM(lat1, lon1, lat2, lon2) {
+            var R = 6371;
+            var dLat = (lat2 - lat1) * Math.PI / 180;
+            var dLon = (lon2 - lon1) * Math.PI / 180;
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // ========================================================
+        // 2. DOM
+        // ========================================================
+        const deliveryMethodInput = document.getElementById('delivery_method_input');
+        const paymentMethodInput = document.getElementById('payment_method_input');
+        const deliveryTimeSlotInput = document.getElementById('delivery_time_slot_input');
+        const addressTypeInput = document.getElementById('address_type_input');
+        const selectedStoreIdInput = document.getElementById('selected_store_id_input');
+        const selectedStoreNameInput = document.getElementById('selected_store_name_input');
+        const selectedStoreAddressInput = document.getElementById('selected_store_address_input');
+
+        const tabDelivery = document.getElementById('tab-delivery');
+        const tabPickup = document.getElementById('tab-pickup');
+        const deliverySection = document.getElementById('delivery-section');
+        const pickupSection = document.getElementById('pickup-section');
+        const paymentBox = document.getElementById('payment-box');
+        const timeSlotBox = document.getElementById('time-slot-box');
+        const storeSelect = document.getElementById('store_select');
+        const btnTimCuaHangWrap = document.getElementById('btn-tim-cua-hang-wrap');
+
+        function getSelectedStoreId() {
+            return selectedStoreIdInput?.value || '';
+        }
+
+        // ========================================================
+        // 3. TÍNH SHIP
+        // ========================================================
+        function tinhPhiGiaoHang() {
+            var deliveryMethod = deliveryMethodInput?.value;
+            if (deliveryMethod === 'pickup') return;
+            if (khachLat === 0 || khachLon === 0) return;
+
+            var select = document.getElementById('store_select');
+            if (!select) return;
+
+            var selectedOption = select.options[select.selectedIndex];
+            if (!selectedOption || selectedOption.value === "") return;
+
+            var storeLat = parseFloat(selectedOption.getAttribute('data-lat'));
+            var storeLon = parseFloat(selectedOption.getAttribute('data-lon'));
+
+            var phiGiaoHangText = document.getElementById('phi-giao-hang-text');
+            var tongTienText = document.getElementById('tong-tien-text');
+            var btnDatHang = document.getElementById('btn-dat-hang');
+            var textBtnDatHang = document.getElementById('tong-tien-btn');
+
+            if (!storeLat || !storeLon || storeLat === 0) {
+                phiGiaoHangText.innerHTML = "<span style='color:#d8232a;'>Lỗi tọa độ quán</span>";
+                if(btnDatHang) btnDatHang.disabled = true;
+                if(btnDatHang) btnDatHang.style.background = "#94a3b8";
+                return;
+            }
+
+            var dist = tinhKhoangCachKM(khachLat, khachLon, storeLat, storeLon);
+
+            if (dist > 5) {
+                phiGiaoHangText.innerHTML = `<span style='color:#d8232a; font-weight:bold;'>Quá 5km (${dist.toFixed(1)}km)</span>`;
+                tongTienText.innerHTML = formatVND(tongTienHang);
+                if(textBtnDatHang) textBtnDatHang.innerHTML = "Không thể giao hàng";
+                if(btnDatHang) btnDatHang.disabled = true;
+                if(btnDatHang) btnDatHang.style.background = "#94a3b8";
+                return;
+            }
+
+            if(btnDatHang && !hasInsufficientStock()) {
+                btnDatHang.disabled = false;
+                btnDatHang.style.background = "#8cc12e";
+            }
+
+            var phiShip = 0;
+
+            if (tongTienHang >= 150000) {
+                phiShip = 0;
+                phiGiaoHangText.innerHTML = `Miễn phí (<span style='color:#0b9445;'>Cách ${dist.toFixed(1)}km</span>)`;
+            } else {
+                if (dist <= 3) {
+                    phiShip = 15000;
+                } else {
+                    var kmVuot = Math.ceil(dist - 3);
+                    phiShip = 15000 + (kmVuot * 5000);
+                }
+                phiGiaoHangText.innerHTML = `${formatVND(phiShip)} (<span style='color:#0b9445;'>Cách ${dist.toFixed(1)}km</span>)`;
+            }
+
+            var tongThanhToan = tongTienHang + phiShip;
+            tongTienText.innerHTML = formatVND(tongThanhToan);
+            if(textBtnDatHang) textBtnDatHang.innerHTML = "Đặt hàng " + formatVND(tongThanhToan);
+        }
+
+        // ========================================================
+        // 4. CẬP NHẬT GIỎ HÀNG
+        // ========================================================
+        function hasInsufficientStock() {
+            if (!getSelectedStoreId()) return false;
+
+            const items = document.querySelectorAll('.js-cart-item');
+            for (const item of items) {
+                const stock = parseInt(item.dataset.stock || '0', 10);
+                const qty = parseInt(item.querySelector('.js-qty')?.textContent || '0', 10);
+                if (qty > stock) return true;
+            }
+            return false;
+        }
+
+        function refreshStockText(itemEl) {
+            const stock = parseInt(itemEl.dataset.stock || '0', 10);
+            const qty = parseInt(itemEl.querySelector('.js-qty')?.textContent || '0', 10);
+            const stockText = itemEl.querySelector('.js-stock-text');
+
+            if (!stockText) return;
+
+            if (!getSelectedStoreId()) {
+                stockText.className = 'unit-line stock-warn js-stock-text';
+                stockText.textContent = 'Vui lòng chọn chi nhánh để kiểm tra tồn kho';
+                return;
+            }
+
+            if (qty <= stock) {
+                stockText.className = 'unit-line stock-ok js-stock-text';
+                stockText.textContent = `Còn ${stock} sản phẩm tại chi nhánh đã chọn`;
+            } else {
+                stockText.className = 'unit-line stock-bad js-stock-text';
+                stockText.textContent = `Chỉ còn ${stock} sản phẩm tại chi nhánh đã chọn, không đủ số lượng bạn mua`;
+            }
+        }
+
+        function recalcCartTotal() {
+            tongTienHang = 0;
+            document.querySelectorAll('.js-cart-item').forEach(row => {
+                const unitPrice = parseFloat(row.dataset.unitPrice || '0');
+                const qty = parseInt(row.querySelector('.js-qty')?.textContent || '0', 10);
+                tongTienHang += (unitPrice * qty);
+            });
+
+            const tongTienHangText = document.getElementById('tong-tien-hang-text');
+            const tongTienText = document.getElementById('tong-tien-text');
+            const tongTienBtn = document.getElementById('tong-tien-btn');
+            const vipPointText = document.getElementById('vip-point-text');
+            const btnDatHang = document.getElementById('btn-dat-hang');
+
+            if (tongTienHangText) tongTienHangText.textContent = formatVND(tongTienHang);
+
+            if (deliveryMethodInput.value === 'pickup') {
+                if (tongTienText) tongTienText.textContent = formatVND(tongTienHang);
+                if (tongTienBtn) tongTienBtn.textContent = 'Đặt hàng ' + formatVND(tongTienHang);
+            } else {
+                tinhPhiGiaoHang();
+            }
+
+            if (vipPointText) vipPointText.textContent = Math.floor(tongTienHang / 100) + ' điểm';
+
+            if (hasInsufficientStock()) {
+                if (btnDatHang) {
+                    btnDatHang.disabled = true;
+                    btnDatHang.style.background = "#94a3b8";
+                }
+                if (tongTienBtn) tongTienBtn.textContent = 'Không đủ hàng tại chi nhánh';
+            } else if (deliveryMethodInput.value === 'pickup') {
+                if (btnDatHang) {
+                    btnDatHang.disabled = false;
+                    btnDatHang.style.background = "#8cc12e";
+                }
+            }
+        }
+
+        // ĐÃ SỬA LỖI SYNTAX Ở HÀM NÀY
+        async function updateQuantity(productId, action, btnEl) {
+            const itemEl = btnEl.closest('.js-cart-item');
+            if (!itemEl) return;
+
+            const qtyEl = itemEl.querySelector('.js-qty');
+            const lineTotalEl = itemEl.querySelector('.js-line-total');
+            const currentQty = parseInt(qtyEl.textContent || '1', 10);
+            const nextQty = action === 'increase' ? currentQty + 1 : currentQty - 1;
+            if (nextQty < 0) return;
+
+            const qtyButtons = itemEl.querySelectorAll('.qty-box button');
+            qtyButtons.forEach(btn => btn.disabled = true);
+
+            try {
+                const updateUrl = itemEl.querySelector('.js-update-url')?.value;
+                const response = await fetch(updateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    },
+                    body: new URLSearchParams({ action })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    showErrorModal(data.message || 'Không thể cập nhật số lượng.');
+                    return;
+                }
+
+                if (nextQty <= 0) {
+                    itemEl.remove();
+                } else {
+                    qtyEl.textContent = nextQty;
+                    const unitPrice = parseFloat(itemEl.dataset.unitPrice || '0');
+                    if (lineTotalEl) lineTotalEl.textContent = formatVND(unitPrice * nextQty);
+                    refreshStockText(itemEl);
+                }
+
+                recalcCartTotal();
+
+                const remainingItems = document.querySelectorAll('.js-cart-item').length;
+                if (remainingItems === 0) window.location.reload();
+
+            } catch (e) {
+                showErrorModal('Có lỗi khi cập nhật số lượng.');
+            } finally {
+                document.querySelectorAll('.js-cart-item .qty-box button').forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // ========================================================
+        // 5. GIAO DIỆN & TÙY CHỌN
+        // ========================================================
+        if (tabDelivery) {
+            tabDelivery.addEventListener('click', function () {
+                deliveryMethodInput.value = 'delivery';
+                tabDelivery.classList.add('active');
+                tabPickup.classList.remove('active');
+                deliverySection.classList.remove('hidden');
+                pickupSection.classList.add('hidden');
+
+                document.getElementById('store-section-title').innerText = "Cửa hàng phục vụ (Sẽ giao đến nhà bạn)";
+                btnTimCuaHangWrap.style.display = 'none';
+                tinhPhiGiaoHang();
+            });
+        }
+
+        if (tabPickup) {
+            tabPickup.addEventListener('click', function () {
+                deliveryMethodInput.value = 'pickup';
+                tabPickup.classList.add('active');
+                tabDelivery.classList.remove('active');
+                pickupSection.classList.remove('hidden');
+                deliverySection.classList.add('hidden');
+
+                document.getElementById('store-section-title').innerText = "Chọn cửa hàng bạn sẽ đến nhận";
+                btnTimCuaHangWrap.style.display = 'block';
+
+                const phiGiaoHangText = document.getElementById('phi-giao-hang-text');
+                const tongTienText = document.getElementById('tong-tien-text');
+                const textBtnDatHang = document.getElementById('tong-tien-btn');
+                const btnDatHang = document.getElementById('btn-dat-hang');
+
+                if (phiGiaoHangText) phiGiaoHangText.innerHTML = "Miễn phí";
+                if (tongTienText) tongTienText.innerHTML = formatVND(tongTienHang);
+                if (textBtnDatHang) textBtnDatHang.innerHTML = "Đặt hàng " + formatVND(tongTienHang);
+
+                if (btnDatHang && !hasInsufficientStock()) {
+                    btnDatHang.disabled = false;
+                    btnDatHang.style.background = "#8cc12e";
+                }
+            });
+        }
+
+        if (storeSelect) {
+            storeSelect.addEventListener('change', function () {
+                const option = this.options[this.selectedIndex];
+                selectedStoreIdInput.value = option.value || '';
+                selectedStoreNameInput.value = option.dataset.name || '';
+                selectedStoreAddressInput.value = option.dataset.address || '';
+                document.getElementById('checkout-options-form').submit(); // Người dùng chọn thì reload luôn
+            });
+        }
+
+        function toggleTimeSection() {
+            if (timeSlotBox) timeSlotBox.classList.toggle('hidden');
+        }
+
+        document.querySelectorAll('input[name="delivery_time_slot_radio"]').forEach(el => {
+            el.addEventListener('change', function () {
+                deliveryTimeSlotInput.value = this.value;
+                document.querySelectorAll('input[name="delivery_time_slot_radio"]').forEach(r => {
+                    r.closest('.radio-line').classList.remove('active');
+                });
+                this.closest('.radio-line').classList.add('active');
+            });
+        });
+
+        function togglePaymentBox() {
+            if (paymentBox) paymentBox.classList.toggle('hidden');
+        }
+
+        document.querySelectorAll('input[name="payment_method_radio"]').forEach(el => {
+            el.addEventListener('change', function () {
+                paymentMethodInput.value = this.value;
+
+                const paymentIcon = document.getElementById('payment-icon');
+                const paymentTitle = document.getElementById('payment-title');
+                const paymentBadge = document.getElementById('payment-badge');
+                const vipNote = document.getElementById('vip-note');
+
+                document.querySelectorAll('input[name="payment_method_radio"]').forEach(r => {
+                    r.closest('.radio-line').classList.remove('active');
+                });
+                this.closest('.radio-line').classList.add('active');
+
+                if (this.value === 'CASH') {
+                    paymentIcon.innerHTML = '💵';
+                    paymentTitle.innerHTML = 'Tiền mặt';
+                    paymentBadge.innerHTML = 'Thanh toán khi nhận';
+                    vipNote.innerHTML = 'Bạn đang chọn <strong>thanh toán bằng tiền mặt</strong> khi nhận hàng.';
+                } else {
+                    paymentIcon.innerHTML = '🏦';
+                    paymentTitle.innerHTML = 'Chuyển khoản';
+                    paymentBadge.innerHTML = 'x2 điểm VIP';
+                    vipNote.innerHTML = 'Bạn được <strong>x2 điểm VIP</strong> tích lũy vì đã chọn <strong>chuyển khoản</strong>!';
+                }
+            });
+        });
+
+        // ========================================================
+        // 6. XỬ LÝ BẢN ĐỒ VÀ ĐỊA CHỈ
+        // ========================================================
+        var addressInput = document.getElementById('dia_chi_giao_hang_textarea');
+
+        if (addressInput) {
+            var typingTimer;
+            var doneTypingInterval = 1200; 
+
+            addressInput.addEventListener('keyup', function () {
+                clearTimeout(typingTimer);
+                if (addressInput.value) {
+                    typingTimer = setTimeout(autoSearchLocation, doneTypingInterval);
+                }
+            });
+
+            addressInput.addEventListener('keydown', function () {
+                clearTimeout(typingTimer);
+            });
+
+            function autoSearchLocation() {
+                var text = addressInput.value.trim();
+                if (text.length < 5 || text.includes("Đang dò tìm")) return;
+
+                var searchQuery = text + ", Việt Nam";
+                var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`;
+
+                fetch(url)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            var foundLat = parseFloat(data[0].lat);
+                            var foundLon = parseFloat(data[0].lon);
+                            khachLat = foundLat;
+                            khachLon = foundLon;
+                            hienThiBanDo(khachLat, khachLon);
+                            sapXepCuaHangGanNhat(khachLat, khachLon);
+                            tinhPhiGiaoHang();
+                        }
+                    })
+                    .catch(err => console.log("Lỗi tìm địa chỉ tự động:", err));
+            }
+        }
+
+        function dichToaDoRaDiaChi(lat, lon) {
+            if (addressInput) addressInput.value = "⏳ Đang dò tìm tên đường từ vệ tinh...";
+            var url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1&accept-language=vi`;
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        addressInput.value = data.display_name;
+                        document.getElementById('address_type_input').value = 'current_location';
+                    } else {
+                        addressInput.value = `${lat}, ${lon}`;
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi:", err);
+                    alert("Mạng yếu quá vệ tinh không dịch được sếp ơi!");
+                });
+        }
+
+        // ĐÃ SỬA LẠI LOGIC CẢNH BÁO TỒN KHO KHI BẢN ĐỒ TỰ ĐỔI QUÁN
+        function sapXepCuaHangGanNhat(lat, lon) {
+            var select = document.getElementById('store_select');
+            if(!select) return;
+            
+            var options = Array.from(select.options);
+            var defaultOption = options.find(opt => opt.value === "");
+            var storeOptions = options.filter(opt => opt.value !== "");
+
+            var oldStoreId = selectedStoreIdInput.value;
+
+            storeOptions.forEach(opt => {
+                var sLat = parseFloat(opt.getAttribute('data-lat'));
+                var sLon = parseFloat(opt.getAttribute('data-lon'));
+                var name = opt.getAttribute('data-name');
+                var address = opt.getAttribute('data-address');
+
+                if (sLat && sLon && sLat > 0) {
+                    var dist = tinhKhoangCachKM(lat, lon, sLat, sLon);
+                    opt.distance = dist;
+                    opt.text = `(Cách ${dist.toFixed(1)} km) ${name} - ${address}`;
+                } else {
+                    opt.distance = 999999;
+                    opt.text = `${name} - ${address} (Chưa tọa độ)`;
+                }
+            });
+
+            storeOptions.sort((a, b) => a.distance - b.distance);
+
+            select.innerHTML = '';
+            select.appendChild(defaultOption);
+            storeOptions.forEach(opt => select.appendChild(opt));
+
+            if (storeOptions.length > 0 && storeOptions[0].distance < 999999) {
+                var newStoreId = storeOptions[0].value;
+                select.value = newStoreId;
+                selectedStoreIdInput.value = newStoreId;
+                selectedStoreNameInput.value = storeOptions[0].getAttribute('data-name');
+                selectedStoreAddressInput.value = storeOptions[0].getAttribute('data-address');
+                
+                // CẢNH BÁO USER NẾU QUÁN THAY ĐỔI ĐỂ HỌ BIẾT MÀ REOAD KIỂM TRA TỒN KHO
+                if (oldStoreId !== newStoreId && oldStoreId !== '') {
+                    document.querySelectorAll('.js-stock-text').forEach(el => {
+                        el.className = 'unit-line stock-warn js-stock-text';
+                        el.innerHTML = '⚠️ Chi nhánh gần nhất vừa thay đổi. Vui lòng <a href="javascript:void(0)" onclick="document.getElementById(\'checkout-options-form\').submit()" style="color:#008a37; font-weight:bold; text-decoration:underline;">TẢI LẠI TRANG</a> để lấy tồn kho mới nhất!';
+                    });
+                }
+            }
+        }
+
+        var checkoutMap = null;
+        var checkoutMarker = null;
+
+        function hienThiBanDo(lat, lon) {
+            var container = document.getElementById('checkout-map-container');
+            container.style.display = 'block';
+
+            if (!checkoutMap) {
+                checkoutMap = L.map('checkout-map').setView([lat, lon], 16);
+                bhxTileLayer().addTo(checkoutMap);
+
+                checkoutMap.on('click', function(e) {
+                    khachLat = e.latlng.lat;
+                    khachLon = e.latlng.lng;
+
+                    if (checkoutMarker) checkoutMarker.setLatLng(e.latlng);
+                    else checkoutMarker = L.marker(e.latlng).addTo(checkoutMap);
+
+                    dichToaDoRaDiaChi(khachLat, khachLon);
+                    sapXepCuaHangGanNhat(khachLat, khachLon);
+                    tinhPhiGiaoHang();
+                    checkoutMap.panTo(e.latlng);
+                });
+            } else {
+                checkoutMap.setView([lat, lon], 16);
+            }
+
+            if (checkoutMarker) checkoutMarker.setLatLng([lat, lon]);
+            else checkoutMarker = L.marker([lat, lon]).addTo(checkoutMap);
+
+            // Tăng thời gian chờ lên để bản đồ có đủ thời gian Load khung viền, tránh lỗi xám
+            setTimeout(function() { 
+                if (checkoutMap) checkoutMap.invalidateSize(); 
+            }, 400); 
+        }
+
+        function layViTriHienTai() {
+            if (navigator.geolocation) {
+                if (addressInput) addressInput.value = "⏳ Đang kết nối GPS...";
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        khachLat = pos.coords.latitude;
+                        khachLon = pos.coords.longitude;
+
+                        dichToaDoRaDiaChi(khachLat, khachLon);
+                        hienThiBanDo(khachLat, khachLon);
+                        sapXepCuaHangGanNhat(khachLat, khachLon);
+                        tinhPhiGiaoHang();
+                    },
+                    function() {
+                        showErrorModal("Trình duyệt đang chặn định vị GPS. Vui lòng cấp quyền hoặc dùng Bản đồ.");
+                        if (addressInput) addressInput.value = "";
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            } else {
+                showErrorModal("Thiết bị này không hỗ trợ GPS!");
+            }
+        }
+
+        function moBanDoChonDiaChi() {
+            var container = document.getElementById('checkout-map-container');
+            container.style.display = 'block';
+            setTimeout(function() {
+                hienThiBanDo(10.7769, 106.7009); // Mặc định TPHCM
+            }, 200);
+        }
+
+        function dongBanDo() {
+            document.getElementById('checkout-map-container').style.display = 'none';
+        }
+
+        function layViTriVaTimCuaHang() {
+            if (navigator.geolocation) {
+                var btn = document.getElementById('btn-tim-cua-hang');
+                var originalText = btn.innerHTML;
+                btn.innerHTML = "⏳ Đang quét...";
+                btn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        sapXepCuaHangGanNhat(pos.coords.latitude, pos.coords.longitude);
+                        document.getElementById('checkout-options-form').submit(); // Submit vì người dùng chủ động tìm
+                    },
+                    function() {
+                        showErrorModal("Bạn cần cấp quyền GPS để tính năng này hoạt động.");
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                );
+            }
+        }
+
+        // ========================================================
+        // 7. MODAL & ĐẶT HÀNG
+        // ========================================================
+        function showErrorModal(message) {
+            const modal = document.getElementById('error-modal');
+            const text = document.getElementById('error-modal-text');
+            if (modal && text) {
+                text.innerHTML = message;
+                modal.style.display = 'flex';
+            } else {
+                alert(message); 
+            }
+        }
+
+        function closeErrorModal() {
+            const modal = document.getElementById('error-modal');
+            if(modal) modal.style.display = 'none';
+        }
+
+        function submitCheckout() {
+            const deliveryMethod = deliveryMethodInput.value;
+            const paymentMethod = paymentMethodInput.value;
+            let diaChi = document.getElementById('dia_chi_giao_hang_textarea') ? document.getElementById('dia_chi_giao_hang_textarea').value.trim() : '';
+
+            if (!selectedStoreIdInput.value) {
+                showErrorModal('Vui lòng chọn cửa hàng phục vụ trước khi đặt hàng.');
+                return;
+            }
+
+            if (hasInsufficientStock()) {
+                showErrorModal('Chi nhánh đã chọn <strong style="color:#d8232a;">không đủ hàng</strong> cho một hoặc nhiều sản phẩm trong giỏ.<br><br>Vui lòng giảm số lượng mua hoặc chọn chi nhánh khác!');
+                return;
+            }
+
+            if (deliveryMethod === 'pickup') {
+                const pName = document.getElementById('pickup_ten_nguoi_nhan').value.trim();
+                const pPhone = document.getElementById('pickup_sdt_nguoi_nhan').value.trim();
+                if (!pName || !pPhone) {
+                    showErrorModal('Vui lòng điền <strong>Tên người nhận</strong> và <strong>Số điện thoại</strong>.');
+                    return;
+                }
+            } else {
+                const dNameEl = document.querySelector('input[name="ten_nguoi_nhan"]');
+                const dPhoneEl = document.querySelector('input[name="sdt_nguoi_nhan"]');
+                const dName = dNameEl ? dNameEl.value.trim() : '';
+                const dPhone = dPhoneEl ? dPhoneEl.value.trim() : '';
+
+                if (!dName || !dPhone || !diaChi) {
+                    showErrorModal('Vui lòng điền đầy đủ <strong>Tên người nhận, SĐT</strong> và <strong>Địa chỉ giao hàng</strong>.');
+                    return;
+                }
+
+                if (!deliveryTimeSlotInput.value) {
+                    showErrorModal('Vui lòng chọn <strong>Thời gian giao hàng</strong>.');
+                    return;
+                }
+            }
+
+            document.getElementById('checkout_delivery_method').value = deliveryMethod;
+            document.getElementById('checkout_payment_method').value = paymentMethod;
+            document.getElementById('checkout_delivery_time_slot').value = deliveryTimeSlotInput.value;
+            document.getElementById('checkout_address_type').value = addressTypeInput.value;
+            document.getElementById('checkout_dia_chi_giao_hang').value = diaChi;
+            
+            if(deliveryMethod === 'pickup') {
+                document.getElementById('checkout_ten_nguoi_nhan').value = document.getElementById('pickup_ten_nguoi_nhan').value.trim();
+                document.getElementById('checkout_sdt_nguoi_nhan').value = document.getElementById('pickup_sdt_nguoi_nhan').value.trim();
+            } else {
+                document.getElementById('checkout_ten_nguoi_nhan').value = document.querySelector('input[name="ten_nguoi_nhan"]').value.trim();
+                document.getElementById('checkout_sdt_nguoi_nhan').value = document.querySelector('input[name="sdt_nguoi_nhan"]').value.trim();
+            }
+
+            document.getElementById('checkout_selected_store_id').value = selectedStoreIdInput.value;
+            document.getElementById('checkout_selected_store_name').value = selectedStoreNameInput.value;
+            document.getElementById('checkout_selected_store_address').value = selectedStoreAddressInput.value;
+
+            document.getElementById('checkout-submit-form').submit();
+        }
+
+        function confirmRemove(actionUrl, productName) {
+            document.getElementById('remove-form').action = actionUrl;
+            document.getElementById('remove-modal-text').innerHTML = `Bạn có muốn xóa sản phẩm <strong>${productName}</strong> không?`;
+            document.getElementById('remove-modal').style.display = 'flex';
+        }
+
+        function closeRemoveModal() {
+            document.getElementById('remove-modal').style.display = 'none';
+        }
+
+        // Kích hoạt text tồn kho ngay khi load trang
+        document.querySelectorAll('.js-cart-item').forEach(item => refreshStockText(item));
+        if (hasInsufficientStock()) {
+            const btn = document.getElementById('btn-dat-hang');
+            const text = document.getElementById('tong-tien-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.style.background = "#94a3b8";
+            }
+            if (text) text.textContent = 'Không đủ hàng tại chi nhánh';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+{% block title %}Trang chủ{% endblock %}
+
+{% block content %}
+<style>
+    /* Ép các thẻ sản phẩm cao bằng nhau trên cùng 1 hàng */
+    .product-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    /* Ép phần thông tin (tên, giá) tự động giãn ra để chiếm hết khoảng trống */
+    .product-info {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    /* Đẩy phần nút bấm dính chặt xuống đáy của thẻ */
+    .product-actions {
+        margin-top: auto; 
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding-top: 15px; /* Thêm tí khoảng cách cho thoáng */
+    }
+
+    /* Làm 2 nút to đều nhau 50-50 */
+    .product-actions .btn-detail, 
+    .product-actions .btn-add {
+        flex: 1;
+        text-align: center;
+        padding: 8px 0;
+    }
+</style>
+
+
+<section class="home-hero">
+    <div class="container">
+        <div class="home-hero-box modern-hero-box">
+            <div class="hero-left">
+                <span class="hero-tag">Siêu thị online cho gia đình</span>
+                <h1 style="color:black">Mua sắm thực phẩm tươi ngon mỗi ngày</h1>
+                <p style="color:black">
+                    Đầy đủ rau củ, thịt cá, đồ uống, gia vị và các mặt hàng thiết yếu
+                    với giá hợp lý, dễ chọn, dễ mua và giao nhanh tận nơi.
+                </p>
+
+                <div class="hero-actions">
+                    <a href="{% url 'store:product_list' %}" class="hero-main-btn" style="color:black">Mua ngay</a>
+                </div>
+
+                <div style="color:black" class="hero-mini-stats">
+                    <div  class="hero-stat">
+                        <strong>Nhiều mặt hàng</strong>
+                        <span>Thiết yếu cho gia đình</span>
+                    </div>
+                    <div class="hero-stat">
+                        <strong>Giá dễ mua</strong>
+                        <span>Nhiều ưu đãi mỗi ngày</span>
+                    </div>
+                    <div class="hero-stat">
+                        <strong>Giao nhanh</strong>
+                        <span>Tiện lợi và tiết kiệm thời gian</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="color:black" class="hero-right">
+                <div class="hero-highlight-card">
+                    <span class="highlight-badge">Ưu đãi hôm nay</span>
+                    <h3>Đi chợ online nhanh hơn</h3>
+                    <p>Chọn món dễ hơn với danh mục rõ ràng, sản phẩm nổi bật và giá hiển thị dễ nhìn.</p>
+
+                    <div class="hero-info-list">
+                        <div class="hero-info-card">
+                            <strong>Rau củ tươi</strong>
+                            <span>Phù hợp cho bữa cơm gia đình mỗi ngày</span>
+                        </div>
+                        <div class="hero-info-card">
+                            <strong>Đồ uống & gia vị</strong>
+                            <span>Dễ tìm, dễ chọn, đủ hàng thiết yếu</span>
+                        </div>
+                        <div class="hero-info-card">
+                            <strong>Khuyến mãi hấp dẫn</strong>
+                            <span>Nhiều sản phẩm đang có mức giá tốt</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="home-categories">
+    <div class="container">
+        <div class="section-head">
+            <div>
+                <span class="section-label">Mua sắm nhanh</span>
+                <h2>Danh mục nổi bật</h2>
+            </div>
+            <a href="{% url 'store:product_list' %}" class="section-link">Xem tất cả</a>
+        </div>
+
+        <div class="category-grid home-category-grid improved-category-grid">
+            {% if categories %}
+                {% for category in categories %}
+                    <a href="{% url 'store:product_list' %}?category={{ category.id }}" class="category-card better-category-card">
+                        <span class="category-icon">🛒</span>
+                        <span class="category-name">{{ category.ten_loai }}</span>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <a href="{% url 'store:product_list' %}" class="category-card better-category-card">
+                    <span class="category-icon">🥬</span>
+                    <span class="category-name">Rau củ</span>
+                </a>
+                <a href="{% url 'store:product_list' %}" class="category-card better-category-card">
+                    <span class="category-icon">🐟</span>
+                    <span class="category-name">Thịt cá</span>
+                </a>
+                <a href="{% url 'store:product_list' %}" class="category-card better-category-card">
+                    <span class="category-icon">🥤</span>
+                    <span class="category-name">Đồ uống</span>
+                </a>
+                <a href="{% url 'store:product_list' %}" class="category-card better-category-card">
+                    <span class="category-icon">🧂</span>
+                    <span class="category-name">Gia vị</span>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+<section class="featured-products home-product-section">
+    <div class="container">
+        <div class="section-head">
+            <div>
+                <span class="section-label">Giá tốt hôm nay</span>
+                <h2>Sản phẩm khuyến mãi</h2>
+            </div>
+            <a href="{% url 'store:product_list' %}" class="section-link">Xem thêm</a>
+        </div>
+
+        <!-- 👇 ĐÂY LÀ CÁI THẺ QUYẾT ĐỊNH 4 CỘT NÈ SẾP 👇 -->
+        <div class="product-grid product-grid-4">
+            
+            {% for product in products_km %}
+            <div class="product-card better-product-card">
+                <a href="{% url 'store:product_detail' product.id %}" class="product-image-wrap">
+                    {% if product.anh_chinh %}
+                    <img src="{{ product.anh_chinh.image.url }}" alt="{{ product.ten_san_pham }}" class="product-image">
+                    {% else %}
+                    <div class="product-image placeholder-image">Chưa có ảnh</div>
+                    {% endif %}
+                    {% if product.is_khuyen_mai %}
+                        <span class="product-badge-sale">Sale</span>
+                    {% endif %}
+                </a>
+
+                <div class="product-info">
+                    <div class="product-category">Khuyến mãi</div>
+
+                    <h3 class="product-name">
+                        <a href="{% url 'store:product_detail' product.id %}">
+                            {{ product.ten_san_pham }}
+                        </a>
+                    </h3>
+
+                    <p class="product-desc">Sản phẩm đang có ưu đãi, phù hợp cho nhu cầu mua sắm hằng ngày.</p>
+
+                    <div class="product-price-row">
+                        {% if product.is_khuyen_mai and product.gia_khuyen_mai %}
+                            <div class="price-group">
+                                <span class="old-price">{{ product.gia_goc|vnd }}</span>
+                                <span class="price">{{ product.gia_khuyen_mai|vnd }}</span>
+                            </div>
+                            <span class="sale-badge">Giá tốt</span>
+                        {% else %}
+                            <span class="price">{{ product.don_gia|vnd }}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- HIỂN THỊ TỒN KHO -->
+                    <div style="margin-top: 8px; font-size: 13px; margin-bottom: 10px;">
+                        {% if product.da_chon_cua_hang %}
+                            {% if product.ton_kho_hien_tai > 0 %}
+                                <div style="color: #0b9445; font-weight: bold;">✓ Còn {{ product.ton_kho_hien_tai }} SP</div>
+                            {% else %}
+                                <div style="color: #d8232a; font-weight: bold;">✕ Tạm hết hàng</div>
+                            {% endif %}
+                        {% else %}
+                            <div style="color: #f39c12; font-style: italic; font-size: 12px;">Vui lòng chọn địa chỉ để xem tồn kho</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="product-actions">
+                        <a href="{% url 'store:product_detail' product.id %}" class="btn-detail">Xem chi tiết</a>
+                        <a href="{% url 'store:add_to_cart' product.id %}" class="btn-add ajax-add-cart">Thêm giỏ</a>
+                    </div>
+                </div>
+            </div>
+            
+            {% empty %}
+            <div class="empty-box">
+                <h3>Chưa có sản phẩm khuyến mãi</h3>
+                <p>Hãy quay lại sau để xem thêm các ưu đãi mới nhất.</p>
+            </div>
+            {% endfor %}
+            
+        </div> <!-- 👆 NHỚ ĐÓNG THẺ DIV GRID 👆 -->
+    </div>
+</section>
+
+<section class="featured-products home-product-section">
+    <div class="container">
+        <div class="section-head">
+            <div>
+                <span class="section-label">Mới cập nhật</span>
+                <h2>Sản phẩm mới</h2>
+            </div>
+            <a href="{% url 'store:product_list' %}" class="section-link">Xem thêm</a>
+        </div>
+
+        <div class="product-grid product-grid-4">
+            {% for product in products_new %}
+            <div class="product-card better-product-card">
+                <a href="{% url 'store:product_detail' product.id %}" class="product-image-wrap">
+                            {% if product.anh_chinh %}
+                            <img src="{{ product.anh_chinh.image.url }}" alt="{{ product.ten_san_pham }}"
+                                class="product-image">
+                            {% else %}
+                            <div class="product-image placeholder-image">Chưa có ảnh</div>
+                            {% endif %}
+
+                    <span class="product-badge-new">Mới</span>
+                </a>
+
+                <div class="product-info">
+                    <div class="product-category">Sản phẩm mới</div>
+
+                    <h3 class="product-name">
+                        <a href="{% url 'store:product_detail' product.id %}">
+                            {{ product.ten_san_pham }}
+                        </a>
+                    </h3>
+
+                    <p class="product-desc">Mặt hàng mới được cập nhật, tiện cho bạn khám phá và lựa chọn nhanh.</p>
+
+                    <div class="product-price-row">
+                        {% if product.is_khuyen_mai and product.gia_khuyen_mai %}
+                            <div class="price-group">
+                                <span class="old-price">{{ product.gia_goc|vnd }}</span>
+                                <span class="price">{{ product.gia_khuyen_mai|vnd }}</span>
+                            </div>
+                            <span class="sale-badge">Ưu đãi</span>
+                        {% else %}
+                            <span class="price">{{ product.don_gia|vnd }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="product-actions">
+                        <a href="{% url 'store:product_detail' product.id %}" class="btn-detail">Xem chi tiết</a>
+                        <a href="{% url 'store:add_to_cart' product.id %}" class="btn-add ajax-add-cart">Thêm giỏ</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-box">
+                <h3>Chưa có sản phẩm mới</h3>
+                <p>Danh sách sản phẩm mới sẽ được cập nhật sớm.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<style>
+    #toast-container {
+        position: fixed;
+        bottom: 30px; /* Hiện ở góc dưới cùng */
+        right: 30px;  /* Bên phải màn hình */
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .toast-msg {
+        background-color: #008a37; /* Màu xanh lá Bách Hóa Xanh */
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        /* Hiệu ứng trượt và mờ dần */
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+    }
+    .toast-msg.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+</style>
+
+<div id="toast-container"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Hàm tạo và hiển thị thông báo tự tắt
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            // Tạo thẻ div chứa thông báo
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.innerHTML = '🛒 <span>' + message + '</span>'; // Thêm icon xe đẩy cho sinh động
+
+            // Nhét vào container
+            container.appendChild(toast);
+
+            // Kích hoạt hiệu ứng trượt ra (sau 10ms để CSS kịp nhận)
+            setTimeout(() => { toast.classList.add('show'); }, 10);
+
+            // Hẹn giờ 3 giây (3000ms) sau tự động tắt
+            setTimeout(() => {
+                toast.classList.remove('show'); // Trượt mất tích
+                // Chờ hiệu ứng trượt xong (400ms) thì xóa hẳn thẻ div cho nhẹ web
+                setTimeout(() => { toast.remove(); }, 400);
+            }, 3000);
+        }
+
+        // Lắng nghe sự kiện click nút Thêm giỏ
+        const addCartButtons = document.querySelectorAll('.ajax-add-cart');
+
+        addCartButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault(); 
+                
+                const url = this.getAttribute('href'); 
+
+                fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        
+                        // ===== GỌI HÀM TOAST THAY VÌ ALERT =====
+                        showToast(data.message);
+                        // ========================================
+
+                        const cartCountBadge = document.querySelector('.cart-count');
+                        if (cartCountBadge) {
+                            cartCountBadge.innerText = data.cart_count;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Lỗi:", error);
+                    showToast("❌ Có lỗi xảy ra, vui lòng thử lại!"); // Báo lỗi cũng dùng Toast luôn
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

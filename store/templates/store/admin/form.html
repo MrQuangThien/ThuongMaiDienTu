@@ -1,0 +1,203 @@
+{% extends "store/admin/base_admin.html" %}
+{% block admin_title %}{{ title }}{% endblock %}
+
+{% block admin_content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* Lớp bản đồ nền tự chuyển nguồn: OpenStreetMap -> Esri -> CARTO (bản miễn phí) khi tile không tải được */
+window.bhxTileLayer = function () {
+    var providers = [
+        { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', sub: 'abc', attr: '&copy; OpenStreetMap contributors' },
+        { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', sub: '', attr: 'Tiles &copy; Esri' },
+        { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', sub: 'abcd', attr: '&copy; OpenStreetMap &copy; CARTO' }
+    ];
+    var group = L.layerGroup();
+    var index = -1, errors = 0, loaded = 0, timer = null;
+
+    function use(i) {
+        index = i; errors = 0; loaded = 0;
+        if (timer) clearTimeout(timer);
+        var p = providers[i];
+        var layer = L.tileLayer(p.url, { subdomains: p.sub || 'abc', maxZoom: 19, attribution: p.attr, referrerPolicy: 'origin' });
+        layer.on('tileload', function () { loaded++; });
+        layer.on('tileerror', function () {
+            errors++;
+            if (errors >= 3 && loaded === 0) next();
+        });
+        group.clearLayers();
+        group.addLayer(layer);
+        // Nếu sau 6 giây vẫn chưa có tile nào tải được thì chuyển nguồn
+        timer = setTimeout(function () { if (loaded === 0) next(); }, 6000);
+    }
+    function next() {
+        if (index < providers.length - 1) use(index + 1);
+    }
+    use(0);
+    return group;
+};
+</script>
+
+
+<style>
+    /* ... (CSS của sếp tôi giữ nguyên, không đụng tới) ... */
+    .form-wrapper { max-width: 720px; margin: 30px auto; padding: 25px; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: Arial, sans-serif; }
+    .form-wrapper h2 { margin-top: 0; margin-bottom: 20px; color: #333; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; font-size: 24px; }
+    .form-wrapper p { margin-bottom: 15px; }
+    .form-wrapper label { display: block; font-weight: 600; margin-bottom: 8px; color: #444; }
+    .form-wrapper input[type="text"], .form-wrapper input[type="number"], .form-wrapper input[type="email"], .form-wrapper input[type="password"], .form-wrapper input[type="date"], .form-wrapper input[type="datetime-local"], .form-wrapper select, .form-wrapper textarea { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; transition: border-color 0.3s; }
+    .form-wrapper input:focus, .form-wrapper select:focus, .form-wrapper textarea:focus { border-color: #007bff; outline: none; }
+    .form-wrapper input[type="checkbox"] { transform: scale(1.2); margin-right: 8px; }
+    .form-actions { margin-top: 25px; display: flex; gap: 15px; }
+    .btn-submit { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-size: 15px; cursor: pointer; font-weight: bold; }
+    .btn-submit:hover { background-color: #218838; }
+    .btn-cancel { padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 5px; font-size: 15px; display: inline-block; font-weight: bold; }
+    .btn-cancel:hover { background-color: #5a6268; }
+    .errorlist { color: #dc3545; list-style-type: none; padding: 0; margin: 5px 0 0 0; font-size: 13px; }
+    .helptext { display: block; color: #666; font-size: 12px; margin-top: 4px; }
+</style>
+
+<div class="form-wrapper">
+    <h2>{{ title }}</h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        {{ form.as_p }}
+
+        {% if 'chi nhánh' in title|lower %}
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc;">
+                <label style="font-weight: bold; color: #008a37; font-size: 16px;">📸 Thêm nhiều ảnh phụ cho cửa hàng:</label>
+                <p style="color: #666; font-size: 13px; margin-bottom: 5px;">* Bạn có thể quét chuột hoặc giữ Ctrl để chọn tải lên cùng lúc nhiều ảnh.</p>
+                <input type="file" name="hinh_anh_phu" multiple accept="image/*" style="padding: 15px; border: 2px dashed #28a745; background: #f8fff9;">
+            </div>
+
+            {% if form.instance.pk and form.instance.images.all %}
+                <div style="margin-top: 15px;">
+                    <label style="font-weight: bold; color: #444;">Các ảnh phụ hiện tại:</label>
+                    <div style="display: flex; gap: 15px; margin-top: 8px; flex-wrap: wrap;">
+                        {% for img in form.instance.images.all %}
+                            <div style="position: relative; text-align: center; background: #f9f9f9; padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
+                                <img src="{{ img.image.url }}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; display: block; margin-bottom: 8px;">
+                                <label style="color: #d8232a; font-weight: bold; cursor: pointer; font-size: 13px;">
+                                    <input type="checkbox" name="xoa_anh_phu" value="{{ img.id }}"> Xóa ảnh này
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div id="map-picker-container" style="display: none; margin-top: 20px; margin-bottom: 20px;">
+                <label style="color: #008a37;">📍 Click chuột vào bản đồ để lấy tọa độ nhanh:</label>
+                <div id="map-picker" style="height: 350px; width: 100%; border: 2px dashed #008a37; border-radius: 5px; z-index: 1;"></div>
+                <small style="color: #d8232a; display: block; margin-top: 5px;">* Cảnh báo: Chỉ chấp nhận tọa độ trong lãnh thổ Việt Nam.</small>
+            </div>
+        {% endif %}
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">Lưu thông tin</button>
+            <a href="javascript:history.back()" class="btn-cancel">Hủy bỏ</a>
+        </div>
+    </form>
+</div>
+
+{% if 'chi nhánh' in title|lower %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var latInput = document.getElementById('id_latitude');
+        var lonInput = document.getElementById('id_longitude');
+        var addressInput = document.getElementById('id_dia_chi') || document.querySelector('[name="dia_chi"]');
+
+        if (latInput && lonInput) {
+            var mapContainer = document.getElementById('map-picker-container');
+            mapContainer.style.display = 'block';
+
+            var pickerMap = L.map('map-picker').setView([10.7769, 106.7009], 12);
+            bhxTileLayer().addTo(pickerMap);
+
+            setTimeout(function() { pickerMap.invalidateSize(); }, 300);
+            var pickerMarker = null;
+
+            function moveMarker(lat, lon) {
+                pickerMap.setView([lat, lon], 16);
+                if (pickerMarker) {
+                    pickerMarker.setLatLng([lat, lon]);
+                } else {
+                    pickerMarker = L.marker([lat, lon]).addTo(pickerMap);
+                }
+            }
+
+            if (latInput.value && lonInput.value) {
+                moveMarker(parseFloat(latInput.value), parseFloat(lonInput.value));
+            }
+
+            pickerMap.on('click', function(e) {
+                var lat = e.latlng.lat.toFixed(6);
+                var lon = e.latlng.lng.toFixed(6);
+                if (lat < 8.0 || lat > 24.0 || lon < 102.0 || lon > 110.0) {
+                    alert("⚠️ Vị trí này nằm ngoài lãnh thổ Việt Nam rồi sếp ơi! Vui lòng click chọn lại!");
+                    return;
+                }
+                latInput.value = lat;
+                lonInput.value = lon;
+                moveMarker(lat, lon);
+            });
+
+            function updateMapFromInput() {
+                var lat = parseFloat(latInput.value);
+                var lon = parseFloat(lonInput.value);
+                if (!isNaN(lat) && !isNaN(lon) && lat >= 8.0 && lat <= 24.0 && lon >= 102.0 && lon <= 110.0) {
+                    moveMarker(lat, lon);
+                }
+            }
+            latInput.addEventListener('input', updateMapFromInput);
+            lonInput.addEventListener('input', updateMapFromInput);
+
+            if (addressInput) {
+                var searchBtn = document.createElement('button');
+                searchBtn.type = 'button';
+                searchBtn.innerHTML = '🔍 Tìm tọa độ từ địa chỉ này';
+                searchBtn.style.backgroundColor = '#008a37';
+                searchBtn.style.color = 'white';
+                searchBtn.style.border = 'none';
+                searchBtn.style.padding = '8px 15px';
+                searchBtn.style.borderRadius = '5px';
+                searchBtn.style.marginTop = '5px';
+                searchBtn.style.marginBottom = '15px';
+                searchBtn.style.cursor = 'pointer';
+                searchBtn.style.fontSize = '13px';
+                searchBtn.style.fontWeight = 'bold';
+
+                addressInput.parentNode.insertBefore(searchBtn, addressInput.nextSibling);
+
+                searchBtn.addEventListener('click', function() {
+                    var text = addressInput.value;
+                    if (!text) {
+                        alert("Sếp ơi, nhập tên đường/phường/xã vào ô Địa chỉ trước đã rồi mới tìm được chứ!");
+                        return;
+                    }
+                    searchBtn.innerHTML = '⏳ Đang dò vệ tinh...';
+                    var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(text)}&countrycodes=vn&limit=1`;
+                    
+                    fetch(url).then(r => r.json()).then(data => {
+                        searchBtn.innerHTML = '🔍 Tìm tọa độ từ địa chỉ này';
+                        if (data.length > 0) {
+                            var foundLat = parseFloat(data[0].lat);
+                            var foundLon = parseFloat(data[0].lon);
+                            latInput.value = foundLat.toFixed(6);
+                            lonInput.value = foundLon.toFixed(6);
+                            moveMarker(foundLat, foundLon);
+                        } else {
+                            alert("Vệ tinh không tìm ra địa chỉ này! Sếp thử nhập rõ hơn (VD: thêm Quận, Thành phố) xem sao nhé.");
+                        }
+                    }).catch(err => {
+                        searchBtn.innerHTML = '🔍 Tìm tọa độ từ địa chỉ này';
+                        alert("Mạng đang chập chờn, không tìm được địa chỉ.");
+                    });
+                });
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

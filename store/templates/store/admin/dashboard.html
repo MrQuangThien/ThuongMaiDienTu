@@ -1,0 +1,113 @@
+{% extends "store/admin/base_admin.html" %}
+
+{% block admin_title %}Dashboard quản trị{% endblock %}
+
+{% block admin_content %}
+
+{% if is_staff_role and nhan_vien_hien_tai and chi_nhanh_hien_tai %}
+<div class="admin-card" style="margin-bottom: 20px;">
+    <div class="card-head">
+        <h3>Xin chào nhân viên {{ nhan_vien_hien_tai.ten_nhan_vien }} tại chi nhánh {{ chi_nhanh_hien_tai.ten_chi_nhanh }}</h3>
+    </div>
+</div>
+{% endif %}
+
+<div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+    <form method="get" action="{% url 'store:export_excel' %}" style="display: flex; gap: 10px; align-items: center;">
+        <label style="font-weight: bold; color: #333;">Chọn tháng xuất báo cáo:</label>
+        <input type="month" name="thang_nam" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 8px; outline: none;">
+        
+        <button type="submit" style="display: inline-flex; align-items: center; gap: 8px; background-color: #008a37; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Xuất Báo Cáo
+        </button>
+    </form>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><span>Sản phẩm</span><strong>{{ tong_san_pham }}</strong></div>
+    <div class="stat-card"><span>Khách hàng</span><strong>{{ tong_khach_hang }}</strong></div>
+    <div class="stat-card"><span>Đơn hàng</span><strong>{{ tong_don_hang }}</strong></div>
+
+    {% if not is_staff_role %}
+    <div class="stat-card"><span>Chi nhánh</span><strong>{{ tong_chi_nhanh }}</strong></div>
+    <div class="stat-card"><span>Nhân viên</span><strong>{{ tong_nhan_vien }}</strong></div>
+    <div class="stat-card"><span>Tài khoản</span><strong>{{ tong_tai_khoan }}</strong></div>
+    {% endif %}
+</div>
+
+<div class="admin-grid-2">
+    <div class="admin-card">
+        <div class="card-head">
+            <h3>
+                {% if is_staff_role %}
+                    Đơn hàng của chi nhánh
+                {% else %}
+                    Đơn hàng mới
+                {% endif %}
+            </h3>
+            <a href="{% url 'store:admin_order_list' %}">Xem tất cả</a>
+        </div>
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Mã</th>
+                        <th>Khách hàng</th>
+                        <th>Ngày lập</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in don_hang_moi %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.khach_hang.ten_khach_hang }}</td>
+                        <td>{{ order.ngay_lap|date:"d/m/Y H:i" }}</td>
+                        <td>{{ order.trang_thai }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">Chưa có đơn hàng.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <div class="card-head">
+            <h3>
+                {% if is_staff_role %}
+                    Sản phẩm sắp hết tại chi nhánh
+                {% else %}
+                    Sản phẩm sắp hết
+                {% endif %}
+            </h3>
+            <a href="{% url 'store:admin_product_list' %}">Xem sản phẩm</a>
+        </div>
+        <div class="stock-list">
+            {% for sp in san_pham_sap_het %}
+            <div class="stock-item">
+                <div>
+                    {% if is_staff_role %}
+                        <strong>{{ sp.san_pham.ten_san_pham }}</strong>
+                        <p>{{ sp.san_pham.loai.ten_loai }}</p>
+                    {% else %}
+                        <strong>{{ sp.ten_san_pham }}</strong>
+                        <p>{{ sp.loai.ten_loai }}</p>
+                    {% endif %}
+                </div>
+
+                {% if is_staff_role %}
+                    <span class="stock-badge">{{ sp.so_luong_ton }}</span>
+                {% else %}
+                    <span class="stock-badge">{{ sp.so_luong }}</span>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p>Không có sản phẩm sắp hết.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

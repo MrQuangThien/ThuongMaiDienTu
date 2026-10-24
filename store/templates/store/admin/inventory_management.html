@@ -1,0 +1,72 @@
+{% extends "store/admin/base_admin.html" %}
+
+{% block admin_title %}Quản lý tồn kho{% endblock %}
+
+{% block admin_content %}
+<div class="stats-grid">
+    <div class="stat-card"><span>Tổng mặt hàng</span><strong>{{ tong_mat_hang }}</strong></div>
+    <div class="stat-card"><span>Còn hàng</span><strong>{{ tong_con_hang }}</strong></div>
+    <div class="stat-card"><span>Sắp hết</span><strong>{{ tong_sap_het }}</strong></div>
+    <div class="stat-card"><span>Hết hàng</span><strong>{{ tong_het_hang }}</strong></div>
+</div>
+
+<div class="admin-card" style="margin-top:20px;">
+    <form method="get" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+        <input type="text" name="q" value="{{ keyword }}" placeholder="Tìm sản phẩm / cửa hàng / loại" style="padding:10px 12px; min-width:260px;">
+        <select name="chi_nhanh" style="padding:10px 12px;">
+            <option value="">Tất cả cửa hàng</option>
+            {% for cn in ds_chi_nhanh %}
+                <option value="{{ cn.id }}" {% if selected_chi_nhanh == cn.id|stringformat:"s" %}selected{% endif %}>
+                    {{ cn.ten_chi_nhanh }}
+                </option>
+            {% endfor %}
+        </select>
+        <select name="trang_thai" style="padding:10px 12px;">
+            <option value="">Tất cả trạng thái</option>
+            <option value="CON_HANG" {% if selected_trang_thai == "CON_HANG" %}selected{% endif %}>Còn hàng</option>
+            <option value="SAP_HET" {% if selected_trang_thai == "SAP_HET" %}selected{% endif %}>Sắp hết</option>
+            <option value="HET_HANG" {% if selected_trang_thai == "HET_HANG" %}selected{% endif %}>Hết hàng</option>
+        </select>
+        <button type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Cửa hàng</th>
+                    <th>Sản phẩm</th>
+                    <th>Loại</th>
+                    <th>Số lượng tồn</th>
+                    <th>Cảnh báo</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in ton_khos %}
+                <tr {% if item.so_luong_ton <= 0 %}style="background:#fff1f2;"{% elif item.sap_het_hang %}style="background:#fff7ed;"{% endif %}>
+                    <td>{{ item.chi_nhanh.ten_chi_nhanh }}</td>
+                    <td>{{ item.san_pham.ten_san_pham }}</td>
+                    <td>{{ item.san_pham.loai.ten_loai }}</td>
+                    <td><strong>{{ item.so_luong_ton }}</strong></td>
+                    <td>{{ item.muc_can_canh_bao }}</td>
+                    <td>
+                        {% if item.so_luong_ton <= 0 %}
+                            <span style="background:#dc2626;color:white;padding:6px 10px;border-radius:999px;font-weight:700;">HẾT HÀNG</span>
+                        {% elif item.sap_het_hang %}
+                            <span style="background:#f59e0b;color:white;padding:6px 10px;border-radius:999px;font-weight:700;">SẮP HẾT</span>
+                        {% else %}
+                            <span style="background:#16a34a;color:white;padding:6px 10px;border-radius:999px;font-weight:700;">CÒN HÀNG</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Không có dữ liệu tồn kho.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

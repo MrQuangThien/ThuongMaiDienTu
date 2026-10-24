@@ -1,0 +1,191 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bách hóa XANH{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ================= CẤU TRÚC HEADER 2 TẦNG (CHỐNG VỠ KHUNG) ================= */
+        .site-header { background-color: #ffd400; font-family: 'Inter', sans-serif; border-bottom: none; }
+        
+        /* TẦNG 1: Thanh tài khoản ở trên cùng (Nhỏ gọn) */
+        .top-bar { background-color: #f39c12; padding: 6px 0; }
+        .top-bar-inner { display: flex; justify-content: flex-end; align-items: center; gap: 15px; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        .top-bar-inner a, .top-bar-inner span { color: white; text-decoration: none; font-size: 13px; font-weight: 600; }
+        .top-bar-inner a:hover { text-decoration: underline; }
+
+        /* TẦNG 2: Thanh công cụ chính (Rộng rãi) */
+        .main-bar { padding: 12px 0; }
+        .main-bar-inner { display: flex; align-items: center; justify-content: space-between; gap: 15px; max-width: 1200px; margin: 0 auto; padding: 0 15px; flex-wrap: nowrap !important; }
+        
+        /* Cụm Logo */
+        .logo-wrap { background: white; padding: 5px 15px; border-radius: 8px; text-decoration: none; flex-shrink: 0;}
+        .logo-box { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+        .logo-main { color: #008a37; font-weight: 800; font-size: 16px;}
+        .logo-sub { color: #f39c12; font-weight: 800; font-size: 18px;}
+
+        /* Cụm Bản đồ & Danh sách */
+        .nav-buttons { display: flex; gap: 8px; flex-shrink: 0; }
+        .nav-btn { background: #fff; color: #008a37; text-decoration: none; padding: 10px 15px; border-radius: 6px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 5px; white-space: nowrap;}
+        .nav-btn.active { background: #008a37; color: white; }
+
+        /* Ô tìm kiếm */
+        .search-box { flex-grow: 1; display: flex; background: white; border-radius: 6px; overflow: hidden; min-width: 200px;}
+        .search-box input { border: none; padding: 10px 15px; width: 100%; outline: none; font-size: 14px;}
+        .search-box button { background: white; border: none; padding: 0 15px; cursor: pointer; font-size: 16px;}
+
+        /* Nút Thanh toán / Giỏ hàng */
+        .cart-btn { display: flex; align-items: center; gap: 8px; background: white; color: #008a37; text-decoration: none; padding: 10px 15px; border-radius: 6px; font-weight: 700; flex-shrink: 0; white-space: nowrap;}
+        .cart-count { background: #d8232a; color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; }
+    </style>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="top-bar">
+            <div class="top-bar-inner">
+                {% if request.session.tai_khoan_id %}
+                    <span>👤 Xin chào, {{ request.session.ho_ten|default:"Bạn" }}</span>
+                    
+                    {% if request.session.role == "ADMIN" or request.session.role == "STAFF" %}
+                        <a href="{% url 'store:admin_dashboard' %}">⚙️ Trang quản trị</a>
+                    {% endif %}
+                    
+                    <a href="{% url 'store:order_history' %}">📦 Đơn hàng</a>
+                    <a href="{% url 'store:logout' %}">🚪 Đăng xuất</a>
+                {% else %}
+                    <a href="{% url 'store:login_phone' %}">🔑 Đăng nhập</a>
+                    <a href="{% url 'store:register_phone' %}">📝 Đăng ký</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="main-bar">
+            <div class="main-bar-inner">
+               
+                <a href="{% url 'home' %}" class="logo-wrap">
+                    <div class="logo-box">
+                        <span class="logo-sub">Bách hóa</span>
+                        <span class="logo-sub">XANH</span>
+                    </div>
+                </a>
+
+                <div class="nav-buttons">
+                    <a href="{% url 'locations:map_search' %}" class="nav-btn">🗺️ Bản đồ</a>
+                    <a href="{% url 'store:about' %}" style="display: inline-flex; align-items: center; gap: 5px; background: white; color: #008a37; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+    📖 Giới thiệu
+</a>
+                    <a href="{% url 'locations:store_list' %}" class="nav-btn active">📋 Danh sách cửa hàng</a>
+                </div>
+
+                <form class="search-box" action="{% url 'store:product_list' %}" method="get">
+                    <input type="text" name="q" placeholder="Hôm nay bạn cần tìm gì?">
+                    <button type="submit">🔍</button>
+                </form>
+
+                {% if request.session.role == "ADMIN" or request.session.role == "STAFF" %}
+                    <a href="{% url 'store:pos_checkout' %}" class="cart-btn">
+                        <span>💳 Thanh toán</span>
+                    </a>
+                {% else %}
+                    <a href="{% url 'store:cart_detail' %}" class="cart-btn">
+                        <span>🛒 Giỏ hàng</span>
+                        {% if cart_count %}
+                            <span class="cart-count">{{ cart_count }}</span>
+                        {% endif %}
+                    </a>
+                     <!-- NÚT CHỌN ĐỊA CHỈ TRÊN HEADER -->
+<a href="{% url 'store:location_picker' %}" style="display: inline-flex; align-items: center; gap: 5px; background: #ffe600; color: #111; padding: 8px 15px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+    📍 
+    {% if request.session.dia_chi_giao_hang %}
+        {{ request.session.dia_chi_giao_hang }}
+    {% else %}
+        Chọn địa chỉ giao hàng
+    {% endif %}
+</a>
+                {% endif %}
+                
+
+            </div>
+        </div>
+    </header>
+
+    <main class="page-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-grid">
+            <div>
+                <h4>Bách hóa XANH</h4>
+                <p>Mua sắm thực phẩm tươi ngon và hàng thiết yếu tiện lợi cho gia đình.</p>
+            </div>
+            <div>
+                <h4>Hỗ trợ khách hàng</h4>
+                <p>Hotline: 1900 1908</p>
+                <p>Email: support@bhxstore.local</p>
+            </div>
+            <div>
+                <h4>Dịch vụ</h4>
+                <p>Giao nhanh trong ngày</p>
+                <p>Chọn cửa hàng gần bạn</p>
+                <p>Giá rõ ràng - dễ mua sắm</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="location-modal" id="locationModal">
+        <div class="location-overlay" onclick="toggleLocationModal()"></div>
+        <div class="location-content">
+            <div class="location-head">
+                <h3>Chọn khu vực giao hàng</h3>
+                <button type="button" class="close-btn" onclick="toggleLocationModal()">✕</button>
+            </div>
+
+            <p class="location-desc">Chọn khu vực để xem đúng tồn kho, giá và cửa hàng gần bạn.</p>
+
+            <form method="post" action="{% url 'store:set_delivery_location' %}">
+                {% csrf_token %}
+                <div class="location-form-group">
+                    <label>Tỉnh / Thành phố</label>
+                    <select name="city">
+                        <option value="">Chọn tỉnh/thành</option>
+                        <option value="Hồ Chí Minh">Hồ Chí Minh</option>
+                        <option value="Hà Nội">Hà Nội</option>
+                        <option value="Đà Nẵng">Đà Nẵng</option>
+                        <option value="Cần Thơ">Cần Thơ</option>
+                    </select>
+                </div>
+
+                <div class="location-form-group">
+                    <label>Quận / Huyện</label>
+                    <input type="text" name="district" placeholder="Ví dụ: Bình Tân">
+                </div>
+
+                <div class="location-form-group">
+                    <label>Phường / Xã hoặc địa chỉ cụ thể</label>
+                    <input type="text" name="address" placeholder="Nhập địa chỉ giao hàng">
+                </div>
+
+                <div class="location-actions">
+                    <button type="submit" class="save-location-btn">Xác nhận vị trí giao hàng</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleLocationModal() {
+            const modal = document.getElementById('locationModal');
+            modal.classList.toggle('show');
+        }
+    </script>
+</body>
+
+</html>

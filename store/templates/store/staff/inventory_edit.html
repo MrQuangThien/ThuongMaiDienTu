@@ -1,0 +1,90 @@
+{% extends "store/admin/base_admin.html" %}
+
+{% block admin_title %}Cập nhật tồn kho{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card" style="max-width:800px; margin:0 auto;">
+    <h2 style="margin-bottom:16px;">Cập nhật tồn kho</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="margin-bottom:12px; padding:12px; border-radius:8px; background:#eff6ff; color:#1d4ed8;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div style="background:#f8fafc; padding:16px; border-radius:10px; margin-bottom:20px;">
+        <p><strong>Chi nhánh:</strong> {{ ton_kho.chi_nhanh.ten_chi_nhanh }}</p>
+        <p><strong>Sản phẩm:</strong> {{ ton_kho.san_pham.ten_san_pham }}</p>
+        <p><strong>Loại:</strong> {{ ton_kho.san_pham.loai.ten_loai }}</p>
+        <p><strong>Tồn hiện tại:</strong> {{ ton_kho.so_luong_ton }}</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="margin-bottom:16px;">
+            <label style="font-weight:700; display:block; margin-bottom:8px;">Cách cập nhật</label>
+            <label style="margin-right:20px;">
+                <input type="radio" name="action_type" value="add" checked onclick="toggleMode()"> Nhập thêm hàng
+            </label>
+            <label>
+                <input type="radio" name="action_type" value="set" onclick="toggleMode()"> Ghi đè số lượng tồn
+            </label>
+        </div>
+
+        <div id="add-mode" style="margin-bottom:16px;">
+            <label style="font-weight:700; display:block; margin-bottom:8px;">Số lượng nhập thêm</label>
+            <input type="number" name="so_luong_nhap_them" min="0" value="0"
+                   style="padding:10px 12px; width:100%; border:1px solid #cbd5e1; border-radius:8px;">
+        </div>
+
+        <div id="set-mode" style="margin-bottom:16px; display:none;">
+            <label style="font-weight:700; display:block; margin-bottom:8px;">Số lượng tồn mới</label>
+            <input type="number" name="so_luong_ton" min="0" value="{{ ton_kho.so_luong_ton }}"
+                   style="padding:10px 12px; width:100%; border:1px solid #cbd5e1; border-radius:8px;">
+        </div>
+
+        <div style="margin-bottom:16px;">
+            <label style="font-weight:700; display:block; margin-bottom:8px;">Ngưỡng cảnh báo</label>
+            <input type="number" name="muc_can_canh_bao" min="0" value="{{ ton_kho.muc_can_canh_bao }}"
+                   style="padding:10px 12px; width:100%; border:1px solid #cbd5e1; border-radius:8px;">
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <label>
+                <input type="checkbox" name="is_hien_thi" {% if ton_kho.is_hien_thi %}checked{% endif %}>
+                Hiển thị mặt hàng này
+            </label>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="submit"
+                    style="padding:10px 16px; border:none; border-radius:8px; background:#16a34a; color:#fff; font-weight:700;">
+                Lưu cập nhật
+            </button>
+
+            {% if is_admin %}
+                <a href="{% url 'store:inventory_management' %}"
+                   style="padding:10px 16px; border-radius:8px; background:#64748b; color:#fff; text-decoration:none; font-weight:700;">
+                    Quay lại
+                </a>
+            {% else %}
+                <a href="{% url 'store:staff_inventory' %}"
+                   style="padding:10px 16px; border-radius:8px; background:#64748b; color:#fff; text-decoration:none; font-weight:700;">
+                    Quay lại
+                </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleMode() {
+    const action = document.querySelector('input[name="action_type"]:checked').value;
+    document.getElementById('add-mode').style.display = action === 'add' ? 'block' : 'none';
+    document.getElementById('set-mode').style.display = action === 'set' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

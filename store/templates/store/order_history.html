@@ -1,0 +1,719 @@
+{% load currency_filters %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch sử giao dịch</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f6f7fb;
+            color: #1f2937;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 32px auto;
+            padding: 0 16px 40px;
+        }
+
+        .header-card,
+        .filter-card,
+        .day-group,
+        .order-card,
+        .message-box {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .back-wrap {
+            margin-bottom: 16px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #008a37;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 15px;
+            background: #edf8ef;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid #b9e7c8;
+        }
+
+        .header-card {
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 30px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .subtitle {
+            margin: 8px 0 0;
+            color: #6b7280;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .role-badge {
+            display: inline-block;
+            margin-top: 14px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #ecfdf3;
+            color: #047857;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .message-wrap {
+            margin-bottom: 16px;
+        }
+
+        .message-box {
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .message-success {
+            background: #ecfdf3;
+            color: #047857;
+            border-color: #a7f3d0;
+        }
+
+        .message-error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        .filter-card {
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .filter-form {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            align-items: end;
+        }
+
+        .filter-field label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .filter-field input,
+        .filter-field select {
+            width: 100%;
+            height: 44px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 0 12px;
+            background: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn,
+        .btn-danger,
+        .toggle-detail {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            height: 44px;
+            border: none;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #16a34a;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: #eef2f7;
+            color: #111827;
+        }
+
+        .btn-danger {
+            min-width: 132px;
+            height: 40px;
+            padding: 0 14px;
+            background: #fff;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: #fef2f2;
+        }
+
+        .day-group {
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .day-title {
+            margin: 0 0 14px;
+            font-size: 20px;
+            color: #111827;
+        }
+
+        .order-card {
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .order-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .order-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .order-code {
+            margin: 0;
+            font-size: 22px;
+            color: #111827;
+        }
+
+        .order-meta-text {
+            margin: 8px 0 0;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .order-right {
+            text-align: right;
+            min-width: 240px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .status-CHO_XU_LY {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .status-HUY {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .status-default {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .order-total {
+            font-size: 28px;
+            font-weight: 800;
+            color: #16a34a;
+            margin: 0 0 8px;
+        }
+
+        .order-paid {
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .thumb-list {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 14px 0 18px;
+        }
+
+        .thumb-item {
+            width: 88px;
+            height: 88px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            background: #f9fafb;
+            position: relative;
+            flex: 0 0 auto;
+        }
+
+        .thumb-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .thumb-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 12px;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .thumb-more {
+            position: absolute;
+            inset: 0;
+            background: rgba(17, 24, 39, 0.65);
+            color: #fff;
+            font-size: 28px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .order-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid #eef2f7;
+            padding-top: 14px;
+        }
+
+        .order-summary {
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .action-right {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-detail {
+            min-width: 120px;
+            height: 40px;
+            background: transparent;
+            color: #2563eb;
+        }
+
+        .order-detail {
+            display: none;
+            margin-top: 16px;
+            border-top: 1px solid #eef2f7;
+            padding-top: 16px;
+        }
+
+        .order-detail.active {
+            display: block;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 18px;
+        }
+
+        .detail-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 16px;
+            background: #fcfcfd;
+        }
+
+        .detail-box h4 {
+            margin: 0 0 12px;
+            font-size: 16px;
+            color: #111827;
+        }
+
+        .detail-info {
+            margin: 0;
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .product-row {
+            display: grid;
+            grid-template-columns: 72px 1fr auto;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .product-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .product-image {
+            width: 72px;
+            height: 72px;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            background: #f9fafb;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-image-empty {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        .product-name {
+            margin: 0 0 6px;
+            font-weight: 700;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .product-sub {
+            margin: 0;
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .product-price {
+            text-align: right;
+            font-weight: 700;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .payment-list {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px 12px;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .payment-list strong {
+            color: #111827;
+        }
+
+        .empty-box {
+            background: #fff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        @media (max-width: 900px) {
+            .filter-form,
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .order-top,
+            .order-actions {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .order-right {
+                text-align: left;
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="back-wrap">
+            <a href="{% url 'store:home' %}" class="back-link">
+                <span style="font-size:22px; line-height:0.8;">‹</span>
+                Tiếp tục mua sắm
+            </a>
+        </div>
+
+        {% if messages %}
+            <div class="message-wrap">
+                {% for message in messages %}
+                    <div class="message-box {% if message.tags == 'success' %}message-success{% else %}message-error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="header-card">
+            <h1 class="title">Lịch sử giao dịch</h1>
+            <p class="subtitle">
+                {% if role == "ADMIN" %}
+                    Theo dõi toàn bộ lịch sử giao dịch khách hàng, gồm cả khách lẻ, theo chi nhánh và ngày tháng.
+                {% elif role == "STAFF" %}
+                    Theo dõi lịch sử giao dịch tại chi nhánh bạn đang phụ trách.
+                {% else %}
+                    Theo dõi các đơn hàng bạn đã đặt, xem chi tiết sản phẩm và hủy đơn khi còn chờ xử lý.
+                {% endif %}
+            </p>
+
+            <div class="role-badge">
+                Vai trò:
+                {% if role == "ADMIN" %} Quản trị viên
+                {% elif role == "STAFF" %} Nhân viên
+                {% else %} Người dùng
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="filter-card">
+            <form method="get" class="filter-form">
+                <div class="filter-field">
+                    <label for="date_from">Từ ngày</label>
+                    <input type="date" id="date_from" name="date_from" value="{{ selected_date_from }}">
+                </div>
+
+                <div class="filter-field">
+                    <label for="date_to">Đến ngày</label>
+                    <input type="date" id="date_to" name="date_to" value="{{ selected_date_to }}">
+                </div>
+
+                {% if role == "ADMIN" %}
+                    <div class="filter-field">
+                        <label for="branch">Chi nhánh BHX</label>
+                        <select id="branch" name="branch">
+                            <option value="">Tất cả chi nhánh</option>
+                            {% for branch in branches %}
+                                <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ branch.ten_chi_nhanh }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% elif role == "STAFF" %}
+                    <div class="filter-field">
+                        <label>Chi nhánh</label>
+                        <input type="text" value="{% if current_staff and current_staff.chi_nhanh %}{{ current_staff.chi_nhanh.ten_chi_nhanh }}{% else %}Chưa gán chi nhánh{% endif %}" disabled>
+                    </div>
+                {% else %}
+                    <div class="filter-field">
+                        <label>Phạm vi</label>
+                        <input type="text" value="Đơn hàng của tôi" disabled>
+                    </div>
+                {% endif %}
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Lọc dữ liệu</button>
+                    <a href="{% url 'store:order_history' %}" class="btn btn-secondary">Đặt lại</a>
+                </div>
+            </form>
+        </div>
+
+        {% if grouped_orders %}
+            {% for group in grouped_orders %}
+                <div class="day-group">
+                    <h2 class="day-title">Ngày {{ group.date|date:"d/m/Y" }}</h2>
+
+                    {% for order in group.orders %}
+                        <div class="order-card">
+                            <div class="order-top">
+                                <div>
+                                    <h3 class="order-code">Đơn hàng #{{ order.id }}</h3>
+
+                                    <p class="order-meta-text">
+                                        <strong>Thời gian:</strong> {{ order.ngay_lap|date:"H:i, d/m/Y" }}<br>
+
+                                        {% if role == "ADMIN" or role == "STAFF" %}
+                                            <strong>Khách hàng:</strong> {{ order.customer_name }}
+                                            {% if order.is_guest %}(Khách lẻ){% endif %}
+                                            {% if order.customer_phone %} - {{ order.customer_phone }}{% endif %}<br>
+                                        {% endif %}
+
+                                        {% if role == "ADMIN" %}
+                                            <strong>Chi nhánh:</strong> {{ order.branch_name|default:"Chưa có chi nhánh" }}<br>
+                                        {% endif %}
+
+                                        <strong>Địa chỉ:</strong> {{ order.dia_chi_giao_hang|default:"Chưa cập nhật" }}
+                                    </p>
+                                </div>
+
+                                <div class="order-right">
+                                    <p class="order-total">{{ order.tong_tien|vnd }}</p>
+                                    <div class="order-paid">
+                                        Thanh toán: {{ order.payment_display }}
+                                    </div>
+
+                                    <div class="status-badge {% if order.trang_thai == 'CHO_XU_LY' %}status-CHO_XU_LY{% elif order.trang_thai == 'HUY' %}status-HUY{% else %}status-default{% endif %}">
+                                        {{ order.get_trang_thai_display }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="thumb-list">
+                                {% for item in order.preview_images %}
+                                    <div class="thumb-item">
+                                        {% if item.image_url %}
+                                            <img src="{{ item.image_url }}" alt="{{ item.ten_san_pham }}">
+                                        {% else %}
+                                            <div class="thumb-placeholder">{{ item.ten_san_pham }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+
+                                {% if order.more_items_count > 0 %}
+                                    <div class="thumb-item">
+                                        <div class="thumb-more">+{{ order.more_items_count }}</div>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="order-actions">
+                                <div class="order-summary">
+                                    {{ order.chi_tiets.count }} sản phẩm • {{ order.tong_so_luong }} số lượng
+                                </div>
+
+                                <div class="action-right">
+                                    {% if order.can_cancel %}
+                                        <form method="post" action="{% url 'store:cancel_order' order.id %}" style="margin:0;" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng #{{ order.id }} không?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-danger">Hủy đặt hàng</button>
+                                        </form>
+                                    {% endif %}
+
+                                    <button type="button" class="toggle-detail" onclick="toggleDetail('detail-{{ order.id }}', this)">
+                                        Xem chi tiết
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="order-detail" id="detail-{{ order.id }}">
+                                <div class="detail-grid">
+                                    <div class="detail-box">
+                                        <h4>Sản phẩm trong đơn</h4>
+
+                                        {% for ct in order.chi_tiets.all %}
+                                            <div class="product-row">
+                                                <div class="product-image">
+                                                    {% with ct.san_pham.anh_chinh as anh %}
+                                                        {% if anh and anh.image %}
+                                                            <img src="{{ anh.image.url }}" alt="{{ ct.san_pham.ten_san_pham }}">
+                                                        {% else %}
+                                                            <div class="product-image-empty">Không ảnh</div>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                </div>
+
+                                                <div>
+                                                    <p class="product-name">{{ ct.san_pham.ten_san_pham }}</p>
+                                                    <p class="product-sub">Giá bán: {{ ct.don_gia|vnd }} / sản phẩm</p>
+                                                    <p class="product-sub">Số lượng: {{ ct.so_luong }}</p>
+                                                </div>
+
+                                                <div class="product-price">
+                                                    {{ ct.thanh_tien|vnd }}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="detail-box">
+                                        <h4>Thông tin giao dịch</h4>
+                                        <p class="detail-info">
+                                            <strong>Mã đơn:</strong> #{{ order.id }}<br>
+                                            <strong>Ngày lập:</strong> {{ order.ngay_lap|date:"H:i, d/m/Y" }}<br>
+                                            <strong>Người nhận:</strong> {{ order.ten_nguoi_nhan|default:"Chưa cập nhật" }}<br>
+                                            <strong>Số điện thoại:</strong> {{ order.sdt_nguoi_nhan|default:"Chưa cập nhật" }}<br>
+                                            <strong>Địa chỉ:</strong> {{ order.dia_chi_giao_hang|default:"Chưa cập nhật" }}<br>
+                                            <strong>Trạng thái:</strong> {{ order.get_trang_thai_display }}<br>
+                                            <strong>Thanh toán:</strong> {{ order.payment_display }}
+                                        </p>
+
+                                        <div style="height: 16px;"></div>
+
+                                        <h4>Thanh toán</h4>
+                                        <div class="payment-list">
+                                            <span>Tiền hàng</span>
+                                            <strong>{{ order.tong_tien|vnd }}</strong>
+
+                                            <span>Phí giao hàng</span>
+                                            <strong>0đ</strong>
+
+                                            <span>Tổng đơn</span>
+                                            <strong>{{ order.tong_tien|vnd }}</strong>
+
+                                            <span>Đã thanh toán</span>
+                                            <strong>{% if order.trang_thai == "HUY" %}0đ{% else %}{{ order.tong_tien|vnd }}{% endif %}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-box">
+                <h3>Không có giao dịch phù hợp</h3>
+                <p>Hiện chưa có dữ liệu khớp với bộ lọc bạn chọn.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleDetail(id, button) {
+            const detail = document.getElementById(id);
+            if (!detail) return;
+
+            const isActive = detail.classList.contains("active");
+            detail.classList.toggle("active");
+            button.textContent = isActive ? "Xem chi tiết" : "Ẩn chi tiết";
+        }
+    </script>
+</body>
+</html>

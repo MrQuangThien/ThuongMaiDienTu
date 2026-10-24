@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Chọn địa chỉ giao hàng{% endblock %}
+
+{% block content %}
+<!-- Nhúng thư viện Bản đồ Leaflet gốc -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* Lớp bản đồ nền tự chuyển nguồn: OpenStreetMap -> Esri -> CARTO (bản miễn phí) khi tile không tải được */
+window.bhxTileLayer = function () {
+    var providers = [
+        { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', sub: 'abc', attr: '&copy; OpenStreetMap contributors' },
+        { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', sub: '', attr: 'Tiles &copy; Esri' },
+        { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', sub: 'abcd', attr: '&copy; OpenStreetMap &copy; CARTO' }
+    ];
+    var group = L.layerGroup();
+    var index = -1, errors = 0, loaded = 0, timer = null;
+
+    function use(i) {
+        index = i; errors = 0; loaded = 0;
+        if (timer) clearTimeout(timer);
+        var p = providers[i];
+        var layer = L.tileLayer(p.url, { subdomains: p.sub || 'abc', maxZoom: 19, attribution: p.attr, referrerPolicy: 'origin' });
+        layer.on('tileload', function () { loaded++; });
+        layer.on('tileerror', function () {
+            errors++;
+            if (errors >= 3 && loaded === 0) next();
+        });
+        group.clearLayers();
+        group.addLayer(layer);
+        // Nếu sau 6 giây vẫn chưa có tile nào tải được thì chuyển nguồn
+        timer = setTimeout(function () { if (loaded === 0) next(); }, 6000);
+    }
+    function next() {
+        if (index < providers.length - 1) use(index + 1);
+    }
+    use(0);
+    return group;
+};
+</script>
+
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+<div class="container" style="margin-top: 40px; margin-bottom: 60px; max-width: 800px;">
+    <div style="background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+        
+        <h2 style="color: #008a37; margin-top: 0; margin-bottom: 10px; text-align: center; font-size: 24px;">
+            📍 Chọn địa chỉ giao hàng
+        </h2>
+        <p style="text-align: center; color: #64748b; margin-bottom: 20px; font-size: 15px;">
+            Di chuyển ghim đỏ trên bản đồ tới đúng nhà bạn, hệ thống sẽ tự động chọn cửa hàng gần nhất.
+        </p>
+
+        <!-- FORM TÌM KIẾM & XÁC NHẬN -->
+        <form id="map-location-form" method="POST" action="{% url 'store:set_delivery_location' %}">
+            {% csrf_token %}
+            <input type="hidden" name="store_id" id="map_store_id">
+            <input type="hidden" name="store_name" id="map_store_name">
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" name="address" id="map_address_input" value="{{ request.session.dia_chi_giao_hang }}" 
+                       placeholder="Gõ địa chỉ để tìm kiếm..." 
+                       style="flex: 1; padding: 14px 18px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 15px; outline: none; transition: 0.3s;">
+                
+                <button type="button" onclick="mapGetGPS()" title="Lấy vị trí hiện tại"
+                        style="background: #eef8f2; color: #008a37; border: 2px solid #008a37; padding: 0 20px; border-radius: 10px; font-weight: bold; cursor: pointer; white-space: nowrap;">
+                    🎯 Định vị
+                </button>
+            </div>
+
+            <!-- HIỂN THỊ KẾT QUẢ CỬA HÀNG GẦN NHẤT -->
+            <div id="store_result_box" style="display: none; background: #f0fdf4; border: 1px dashed #22c55e; padding: 12px 15px; border-radius: 10px; margin-bottom: 15px;">
+                <span style="color: #166534; font-size: 13px;">🏪 Cửa hàng phục vụ gần nhất:</span>
+                <div id="map_status_text" style="color: #15803d; font-size: 16px; font-weight: bold; margin-top: 5px;"></div>
+            </div>
+
+            <!-- BẢN ĐỒ THẬT -->
+            <div id="real-map" style="height: 450px; width: 100%; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 20px; z-index: 1;"></div>
+
+            <button type="submit" id="btn_confirm" disabled
+                    style="width: 100%; background: #008a37; color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: not-allowed; opacity: 0.5; transition: 0.3s;">
+                XÁC NHẬN ĐỊA CHỈ & MUA SẮM
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 1. Dữ liệu cửa hàng từ Backend
+    const storesData = [
+        {% for s in stores %}
+        { id: "{{ s.id }}", name: "{{ s.ten_chi_nhanh }}", lat: {{ s.latitude|default:0|stringformat:'f' }}, lon: {{ s.longitude|default:0|stringformat:'f' }} },
+        {% endfor %}
+    ];
+
+    // 2. Khởi tạo bản đồ
+    // Tọa độ mặc định: Trung tâm TP.HCM (Sếp có thể đổi)
+    let map = L.map('real-map').setView([10.8231, 106.6297], 13);
+
+    // Lấy bản đồ từ OpenStreetMap
+    bhxTileLayer().addTo(map);
+
+    // 3. Icon Cửa hàng (Màu xanh lá)
+    var storeIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+
+    // Icon Khách hàng (Màu Đỏ)
+    var userIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+
+   // 4. Vẽ tất cả Cửa hàng lên bản đồ (CÓ GOM CỤM)
+    // Khởi tạo nhóm gom cụm
+    var storeClusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50, // Khoảng cách gom cụm (px)
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true
+    });
+
+    storesData.forEach(s => {
+        if(s.lat !== 0 && s.lon !== 0) {
+            let popupContent = `
+                <div style="text-align: center; min-width: 150px;">
+                    <b style="color: #008a37; font-size: 14px;">🏪 ${s.name}</b><br>
+                    <span style="font-size: 12px; color: #64748b;">Cửa hàng Bách Hóa Xanh</span><br><br>
+                    <button type="button" onclick="forceSelectStore('${s.id}', '${s.name}')" 
+                            style="background: #008a37; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;">
+                        ✅ Chọn cửa hàng này
+                    </button>
+                </div>
+            `;
+
+            // Thay vì add thẳng vào map, ta tạo marker...
+            let marker = L.marker([s.lat, s.lon], {icon: storeIcon}).bindPopup(popupContent);
+            
+            // ... rồi nhét nó vào nhóm gom cụm
+            storeClusterGroup.addLayer(marker);
+        }
+    });
+
+    // Cuối cùng mới úp toàn bộ nhóm gom cụm đó lên bản đồ
+    map.addLayer(storeClusterGroup);
+    // 5. Ghim của Khách hàng (Có thể kéo thả)
+    let userMarker = L.marker([10.8231, 106.6297], {icon: userIcon, draggable: true}).addTo(map);
+    userMarker.bindPopup("<b>Vị trí của bạn</b><br>Kéo ghim này đến đúng nhà bạn!").openPopup();
+
+    // Bắt sự kiện khi khách hàng KÉO THẢ ghim xong
+    userMarker.on('dragend', function(e) {
+        let coords = e.target.getLatLng();
+        reverseGeocode(coords.lat, coords.lng); // Dịch tọa độ ra chữ
+        findNearestStore(coords.lat, coords.lng); // Tìm cửa hàng gần nhất
+    });
+
+    // 6. Hàm tính khoảng cách giữa 2 tọa độ (Công thức Haversine)
+    function tinhKhoangCachKM(lat1, lon1, lat2, lon2) {
+        var R = 6371; var dLat = (lat2 - lat1) * Math.PI / 180; var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    }
+
+    // 7. Hàm tìm cửa hàng gần nhất
+    function findNearestStore(lat, lon) {
+        let min_dist = 999999; let nearestStore = null;
+        storesData.forEach(s => {
+            if(s.lat && s.lon) {
+                let d = tinhKhoangCachKM(lat, lon, s.lat, s.lon);
+                if(d < min_dist) { min_dist = d; nearestStore = s; }
+            }
+        });
+        
+        const resultBox = document.getElementById('store_result_box');
+        const statusText = document.getElementById('map_status_text');
+        const btnConfirm = document.getElementById('btn_confirm');
+        resultBox.style.display = "block";
+
+        if(nearestStore) {
+            document.getElementById('map_store_id').value = nearestStore.id;
+            document.getElementById('map_store_name').value = nearestStore.name;
+            statusText.innerHTML = nearestStore.name + " (Cách bạn khoảng " + min_dist.toFixed(1) + "km)";
+            
+            // Bật nút Xác nhận
+            btnConfirm.disabled = false;
+            btnConfirm.style.cursor = "pointer";
+            btnConfirm.style.opacity = "1";
+        } else {
+            statusText.innerHTML = "❌ Chưa có cửa hàng nào gần khu vực này.";
+            btnConfirm.disabled = true;
+            btnConfirm.style.opacity = "0.5";
+        }
+    }
+
+    // 8. Chuyển Tọa độ thành Địa chỉ chữ (Reverse Geocode)
+    function reverseGeocode(lat, lon) {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=vi`)
+        .then(r => r.json())
+        .then(data => {
+            if(data.display_name) {
+                let shortAddr = data.display_name.split(', Việt Nam')[0];
+                document.getElementById('map_address_input').value = shortAddr;
+            }
+        });
+    }
+
+    // 9. Nút Định vị GPS của khách hàng
+    function mapGetGPS() {
+        if (navigator.geolocation) {
+            document.getElementById('store_result_box').style.display = "block";
+            document.getElementById('map_status_text').innerHTML = "⏳ Đang lấy tọa độ vệ tinh...";
+            
+            navigator.geolocation.getCurrentPosition(function(position) {
+                let lat = position.coords.latitude;
+                let lon = position.coords.longitude;
+                
+                // Di chuyển bản đồ và ghim tới vị trí GPS
+                map.setView([lat, lon], 15);
+                userMarker.setLatLng([lat, lon]);
+                
+                reverseGeocode(lat, lon);
+                findNearestStore(lat, lon);
+            }, function() {
+                alert("Bạn chưa cấp quyền định vị cho trình duyệt!");
+            });
+        } else {
+            alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+        }
+    }
+
+    // 10. Tự động di chuyển bản đồ khi gõ địa chỉ vào ô tìm kiếm
+    let typingTimer;
+    document.getElementById('map_address_input').addEventListener('keyup', function() {
+        clearTimeout(typingTimer);
+        let val = this.value.trim();
+        if(val.length >= 8) {
+            document.getElementById('store_result_box').style.display = "block";
+            document.getElementById('map_status_text').innerHTML = "⏳ Đang quét vị trí...";
+            
+            typingTimer = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val + ', Việt Nam')}&limit=1`)
+                .then(r => r.json())
+                .then(data => {
+                    if(data.length > 0) {
+                        let lat = parseFloat(data[0].lat);
+                        let lon = parseFloat(data[0].lon);
+                        
+                        map.setView([lat, lon], 15);
+                        userMarker.setLatLng([lat, lon]);
+                        findNearestStore(lat, lon);
+                    } else {
+                        document.getElementById('map_status_text').innerHTML = "❌ Không tìm thấy tọa độ. Hãy thử kéo thả ghim đỏ.";
+                    }
+                });
+            }, 1200); // Đợi khách gõ xong mới tìm
+        }
+    });
+
+    // Sửa lỗi bản đồ bị xám một nửa khi hiển thị trong thẻ div
+    setTimeout(function(){ map.invalidateSize(); }, 500);
+
+</script>
+{% endblock %}

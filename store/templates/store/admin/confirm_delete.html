@@ -1,0 +1,19 @@
+{% extends "store/admin/base_admin.html" %}
+{% block admin_title %}{{ title }}{% endblock %}
+
+{% block admin_content %}
+<div class="table-wrap">
+    <div class="confirm-delete-box">
+        <h3>{{ title }}</h3>
+        <p>Bạn có chắc muốn xóa <strong>{{ object }}</strong> không?</p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="actions">
+                <button type="submit" class="btn-danger">Xác nhận xóa</button>
+                <a href="{% url cancel_url %}" class="btn-secondary">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
